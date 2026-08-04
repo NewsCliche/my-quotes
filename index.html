@@ -2,46 +2,63 @@
 <html lang="zh-TW">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>心靈與知識卡片庫</title>
-    <!-- PWA 設定 -->
-    <meta name="theme-color" content="#121212">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>勵志語</title>
+    
+    <!-- PWA 全螢幕與獨立 App 規格設定 -->
+    <meta name="mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <link rel="manifest" href="data:application/manifest+json;charset=utf-8,%7B%22name%22%3A%22%E5%BF%83%E9%9D%86%E8%88%87%E7%9F%A5%E8%AD%98%E5%8D%A1%E7%89%87%E5%BA%AB%22%2C%22short_name%22%3A%22%E6%BF%80%E5%8B%B5%E8%AA%9E%22%2C%22start_url%22%3A%22.%22%2C%22display%22%3A%22standalone%22%2C%22background_color%22%3A%22%23121212%22%2C%22theme_color%22%3A%22%23121212%22%7D">
+    <meta name="theme-color" content="#121212">
+    
+    <!-- Web App Manifest (使 Android 辨識為獨立 App) -->
+    <link rel="manifest" href="data:application/manifest+json;charset=utf-8,%7B%22name%22%3A%22%E6%BF%80%E5%8B%B5%E8%AA%9E%E5%8D%A1%E7%89%87%22%2C%22short_name%22%3A%22%E6%BF%80%E5%8B%B5%E8%AA%9E%22%2C%22start_url%22%3A%22.%2F%22%2C%22display%22%3A%22standalone%22%2C%22orientation%22%3A%22portrait%22%2C%22background_color%22%3A%22%23121212%22%2C%22theme_color%22%3A%22%23121212%22%7D">
+
     <style>
         :root {
             --bg-color: #121212;
             --card-bg: #1e1e1e;
             --text-color: #f0f0f0;
-            --accent-color: #d4af37; /* 高雅金 */
+            --accent-color: #d4af37;
             --sub-text: #aaaaaa;
-            --font-size: 26pt; /* 老花友善大字體 */
-            --font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans TC", sans-serif;
+            --font-size: 24pt; /* 老花友善大字體 */
+            --font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
         }
 
-        * { box-sizing: border-box; margin: 0; padding: 0; user-select: none; }
-        body {
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        
+        html, body {
+            width: 100%;
+            height: 100%;
             background-color: var(--bg-color);
             color: var(--text-color);
             font-family: var(--font-family);
-            height: 100vh;
-            display: flex;
-            flex-direction: column;
-            justify-content: space-between;
-            overflow: hidden;
+            overflow: hidden; /* 防止整體頁面亂滑 */
         }
 
-        /* 頂部選單欄 */
+        /* 滿版主容器 (考量手機安全邊界) */
+        .app-container {
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+            height: 100dvh; /* 自動扣除手機狀態列與導覽列高度 */
+            padding-top: env(safe-area-inset-top);
+            padding-bottom: env(safe-area-inset-bottom);
+        }
+
+        /* 頂部控制欄 */
         header {
-            padding: 15px;
+            padding: 12px 16px;
             display: flex;
             justify-content: space-between;
             align-items: center;
-            background-color: rgba(0,0,0,0.3);
+            background-color: #1a1a1a;
+            border-bottom: 1px solid #2d2d2d;
+            flex-shrink: 0;
         }
+
         select, button {
-            font-size: 16pt;
+            font-size: 15pt;
             padding: 8px 12px;
             border-radius: 8px;
             border: 1px solid #444;
@@ -50,95 +67,110 @@
             cursor: pointer;
         }
 
-        /* 卡片主區域 */
+        /* 卡片內容區 (支援內部順暢滑動) */
         main {
             flex: 1;
             display: flex;
             flex-direction: column;
-            justify-content: center;
-            padding: 25px;
-            overflow-y: auto;
-            position: relative;
+            padding: 20px;
+            overflow-y: auto; /* 文字內容多時可滑動 */
+            -webkit-overflow-scrolling: touch;
         }
+
+        .card-wrapper {
+            margin: auto 0; /* 垂直居中，內容過長時向上伸展 */
+        }
+
         .tags-container {
             margin-bottom: 15px;
             display: flex;
             flex-wrap: wrap;
             gap: 8px;
         }
+
         .tag-badge {
-            font-size: 14pt;
-            background-color: #333;
+            font-size: 13pt;
+            background-color: #2a2a2a;
             color: var(--accent-color);
-            padding: 4px 10px;
-            border-radius: 15px;
+            padding: 4px 12px;
+            border-radius: 20px;
             border: 1px solid var(--accent-color);
         }
+
         .quote-text {
             font-size: var(--font-size);
             line-height: 1.5;
             font-weight: 500;
-            margin-bottom: 25px;
+            margin-bottom: 20px;
             letter-spacing: 1px;
             word-break: break-word;
         }
+
         .quote-meta {
-            font-size: 16pt;
+            font-size: 15pt;
             color: var(--sub-text);
             text-align: right;
-            line-height: 1.6;
+            line-height: 1.5;
         }
 
-        /* 註解抽屜頁 */
+        /* 註解抽屜區 */
         .notes-section {
-            margin-top: 20px;
-            border-top: 1px solid #333;
+            margin-top: 25px;
+            border-top: 1px dashed #333;
             padding-top: 15px;
         }
+
         .notes-toggle {
-            font-size: 16pt;
+            font-size: 15pt;
             color: var(--accent-color);
             background: none;
             border: none;
             padding: 0;
             text-decoration: underline;
         }
+
         .notes-list {
             display: none;
-            margin-top: 15px;
-            max-height: 180px;
+            margin-top: 12px;
+            max-height: 200px;
             overflow-y: auto;
         }
+
         .note-item {
-            background-color: #262626;
-            padding: 10px;
-            border-radius: 6px;
+            background-color: #242424;
+            padding: 10px 12px;
+            border-radius: 8px;
             margin-bottom: 8px;
             font-size: 14pt;
+            border-left: 3px solid var(--accent-color);
         }
-        .note-date { font-size: 11pt; color: #888; margin-bottom: 4px; }
 
-        /* 底部操作欄 */
+        .note-date { font-size: 10pt; color: #888; margin-bottom: 3px; }
+
+        /* 底部操作欄 (抬高邊界避免被手機底欄遮擋) */
         footer {
-            padding: 20px;
+            padding: 12px 16px 20px 16px;
             display: grid;
             grid-template-columns: 1fr 1fr 1fr;
-            gap: 12px;
-            background-color: rgba(0,0,0,0.4);
+            gap: 10px;
+            background-color: #1a1a1a;
+            border-top: 1px solid #2d2d2d;
+            flex-shrink: 0;
         }
+
         .btn-action {
-            font-size: 18pt;
-            padding: 15px 0;
+            font-size: 16pt;
+            padding: 14px 0;
             font-weight: bold;
             border: none;
-            border-radius: 12px;
+            border-radius: 10px;
             display: flex;
             align-items: center;
             justify-content: center;
-            gap: 5px;
         }
+
         .btn-like { background-color: #2e7d32; color: white; }
-        .btn-next { background-color: #424242; color: white; }
+        .btn-next { background-color: #3a3a3a; color: white; }
         .btn-dislike { background-color: #c62828; color: white; }
 
         /* 彈窗對話盒 (Modal) */
@@ -151,17 +183,19 @@
             padding: 20px;
             overflow-y: auto;
         }
+
         .modal-content {
             background-color: var(--card-bg);
             padding: 20px;
             border-radius: 12px;
-            max-width: 600px;
-            margin: 30px auto;
+            max-width: 500px;
+            margin: 20px auto;
         }
-        .modal h2 { font-size: 20pt; margin-bottom: 15px; color: var(--accent-color); }
+
+        .modal h2 { font-size: 18pt; margin-bottom: 15px; color: var(--accent-color); }
         .modal input, .modal textarea {
             width: 100%;
-            font-size: 16pt;
+            font-size: 15pt;
             padding: 10px;
             margin-bottom: 12px;
             background-color: #2a2a2a;
@@ -174,46 +208,50 @@
 </head>
 <body>
 
-    <!-- 頂部控制欄 -->
-    <header>
-        <select id="categorySelect" onchange="filterCategory()">
-            <option value="ALL">🎲 隨機全區</option>
-            <option value="FAV">❤️ 按過讚 (喜愛庫)</option>
-            <option value="SLEEP">🌙 沉睡庫 (隱藏中)</option>
-            <option value="心靈成長">🧠 心靈成長</option>
-            <option value="財富自由">💰 財富自由</option>
-            <option value="商業">💼 商業思維</option>
-            <option value="習慣養成">🌱 習慣養成</option>
-        </select>
-        <div>
-            <button onclick="openModal('addModal')">➕ 新增</button>
-            <button onclick="openModal('settingsModal')">⚙️ 設定</button>
-        </div>
-    </header>
+    <div class="app-container">
+        <!-- 頂部控制欄 -->
+        <header>
+            <select id="categorySelect" onchange="filterCategory()">
+                <option value="ALL">🎲 隨機全區</option>
+                <option value="FAV">❤️ 按過讚 (喜愛庫)</option>
+                <option value="SLEEP">🌙 沉睡庫 (隱藏中)</option>
+                <option value="心靈成長">🧠 心靈成長</option>
+                <option value="財富自由">💰 財富自由</option>
+                <option value="商業">💼 商業思維</option>
+                <option value="習慣養成">🌱 習慣養成</option>
+            </select>
+            <div>
+                <button onclick="openModal('addModal')">➕ 新增</button>
+                <button onclick="openModal('settingsModal')">⚙️ 設定</button>
+            </div>
+        </header>
 
-    <!-- 卡片內容區 -->
-    <main id="cardArea">
-        <div class="tags-container" id="cardTags"></div>
-        <div class="quote-text" id="cardText">載入中...</div>
-        <div class="quote-meta">
-            <div id="cardSource"></div>
-            <div id="cardDate" style="font-size: 12pt; margin-top: 4px;"></div>
-        </div>
+        <!-- 卡片內容區 -->
+        <main id="cardArea">
+            <div class="card-wrapper">
+                <div class="tags-container" id="cardTags"></div>
+                <div class="quote-text" id="cardText">載入中...</div>
+                <div class="quote-meta">
+                    <div id="cardSource"></div>
+                    <div id="cardDate" style="font-size: 11pt; margin-top: 4px;"></div>
+                </div>
 
-        <!-- 歷史留言註解區 -->
-        <div class="notes-section">
-            <button class="notes-toggle" onclick="toggleNotes()">💬 留言註解 (<span id="noteCount">0</span>)</button>
-            <button class="notes-toggle" style="margin-left: 15px;" onclick="openAddNoteModal()">➕ 寫心得</button>
-            <div class="notes-list" id="notesList"></div>
-        </div>
-    </main>
+                <!-- 歷史留言註解區 -->
+                <div class="notes-section">
+                    <button class="notes-toggle" onclick="toggleNotes()">💬 留言註解 (<span id="noteCount">0</span>)</button>
+                    <button class="notes-toggle" style="margin-left: 15px;" onclick="openAddNoteModal()">➕ 寫心得</button>
+                    <div class="notes-list" id="notesList"></div>
+                </div>
+            </div>
+        </main>
 
-    <!-- 底部操作按鈕 -->
-    <footer>
-        <button class="btn-action btn-like" onclick="handleAction('LIKE')">❤️ 讚</button>
-        <button class="btn-action btn-next" onclick="handleAction('NEXT')">➡️ 普通</button>
-        <button class="btn-action btn-dislike" onclick="handleAction('DISLIKE')">❌ 不喜歡</button>
-    </footer>
+        <!-- 底部操作按鈕 -->
+        <footer>
+            <button class="btn-action btn-like" onclick="handleAction('LIKE')">❤️ 讚</button>
+            <button class="btn-action btn-next" onclick="handleAction('NEXT')">➡️ 普通</button>
+            <button class="btn-action btn-dislike" onclick="handleAction('DISLIKE')">❌ 不喜歡</button>
+        </footer>
+    </div>
 
     <!-- 新增語錄 彈窗 -->
     <div id="addModal" class="modal">
@@ -221,7 +259,7 @@
             <h2>新增語錄 / 讀書筆記</h2>
             <textarea id="newText" rows="4" placeholder="輸入勵志語或書摘內容..."></textarea>
             <input type="text" id="newSource" placeholder="來源 (例如: 《原子習慣》p.45)">
-            <input type="text" id="newTags" placeholder="標籤關鍵字 (半角逗號隔開，如: 商業,習慣)">
+            <input type="text" id="newTags" placeholder="標籤 (半角逗號隔開，如: 商業,習慣)">
             <div class="modal-buttons">
                 <button onclick="saveNewQuote()">儲存</button>
                 <button onclick="closeModal('addModal')">取消</button>
@@ -248,9 +286,9 @@
             
             <label style="display:block; margin: 10px 0;">字體大小微調：</label>
             <select id="fontSizeSelect" onchange="changeFontSize(this.value)" style="width:100%;">
-                <option value="22pt">中 (22pt)</option>
-                <option value="26pt" selected>大 (26pt - 推薦老花)</option>
-                <option value="32pt">特大 (32pt)</option>
+                <option value="20pt">中 (20pt)</option>
+                <option value="24pt" selected>大 (24pt - 推薦)</option>
+                <option value="28pt">特大 (28pt)</option>
             </select>
 
             <hr style="margin: 20px 0; border-color: #444;">
@@ -268,7 +306,6 @@
     </div>
 
     <script>
-        // 內建預設 20 則精選語錄
         const defaultQuotes = [
             { id: 1, text: "我們重複做的事情，造就了我們；卓越不是一個行為，而是一個習慣。", source: "《原子習慣》", tags: ["心靈成長", "習慣養成"], date: "2026-08-04", liked: false, dislikes: 0, notes: [] },
             { id: 2, text: "如果你找不到一個在你睡覺時還能掙錢的方法，你將會工作到死。", source: "華倫·巴菲特", tags: ["財富自由", "商業"], date: "2026-08-04", liked: false, dislikes: 0, notes: [] },
@@ -283,7 +320,6 @@
         let quotes = [];
         let currentQuote = null;
 
-        // 初始化
         window.onload = function() {
             const saved = localStorage.getItem('my_quotes_data');
             if (saved) {
@@ -299,25 +335,21 @@
             localStorage.setItem('my_quotes_data', JSON.stringify(quotes));
         }
 
-        // 篩選與抽選卡片
         function getFilteredQuotes() {
             const cat = document.getElementById('categorySelect').value;
             const oneYearAgo = new Date();
             oneYearAgo.setFullYear(oneYearAgo.getFullYear() - 1);
 
             return quotes.filter(q => {
-                // 累積滿5次正式刪除 (不回傳)
                 if (q.dislikes >= 5) return false;
 
                 if (cat === 'SLEEP') {
-                    // 沉睡庫：不喜歡 1~4 次且未滿一年
                     return q.dislikes >= 1 && q.dislikes < 5;
                 }
 
-                // 一般選單不包含沉睡庫 (除非過期一年自動釋出)
                 if (q.dislikes >= 1 && q.dislikes < 5) {
                     const quoteDate = new Date(q.date);
-                    if (quoteDate > oneYearAgo) return false; // 還在沉睡期
+                    if (quoteDate > oneYearAgo) return false;
                 }
 
                 if (cat === 'ALL') return true;
@@ -328,7 +360,6 @@
 
         function renderCard() {
             const pool = getFilteredQuotes();
-            const cardArea = document.getElementById('cardArea');
             
             if (pool.length === 0) {
                 document.getElementById('cardTags').innerHTML = '';
@@ -341,28 +372,21 @@
                 return;
             }
 
-            // 隨機抽選一則
             const randomIndex = Math.floor(Math.random() * pool.length);
             currentQuote = pool[randomIndex];
 
-            // 渲染介面
             document.getElementById('cardText').innerText = currentQuote.text;
             document.getElementById('cardSource').innerText = currentQuote.source ? `── ${currentQuote.source}` : '';
             document.getElementById('cardDate').innerText = `新增日期：${currentQuote.date}`;
             
-            // 標籤
             const tagsHtml = currentQuote.tags.map(t => `<span class="tag-badge">#${t}</span>`).join('');
             document.getElementById('cardTags').innerHTML = tagsHtml;
 
-            // 註解渲染
             renderNotes();
         }
 
-        function filterCategory() {
-            renderCard();
-        }
+        function filterCategory() { renderCard(); }
 
-        // 操作：讚 / 普通 / 不喜歡
         function handleAction(type) {
             if (!currentQuote) return;
 
@@ -372,7 +396,7 @@
             } else if (type === 'DISLIKE') {
                 currentQuote.dislikes += 1;
                 if (currentQuote.dislikes >= 5) {
-                    alert('❌ 已累積不喜歡滿 5 次，正式從清單刪除！');
+                    alert('❌ 已累積不喜歡滿 5 次，正式刪除！');
                 } else {
                     alert(`🌙 不喜歡次數：${currentQuote.dislikes} 次。卡片已移入沉睡庫（將隱藏 1 年）。`);
                 }
@@ -382,7 +406,6 @@
             renderCard();
         }
 
-        // 註解相關
         function toggleNotes() {
             const list = document.getElementById('notesList');
             list.style.display = list.style.display === 'block' ? 'none' : 'block';
@@ -393,7 +416,6 @@
             const notes = currentQuote.notes || [];
             document.getElementById('noteCount').innerText = notes.length;
             
-            // 從最新排到最舊
             const sortedNotes = [...notes].reverse();
             const html = sortedNotes.map(n => `
                 <div class="note-item">
@@ -425,7 +447,6 @@
             closeModal('addNoteModal');
         }
 
-        // 新增語錄
         function saveNewQuote() {
             const text = document.getElementById('newText').value.trim();
             const source = document.getElementById('newSource').value.trim();
@@ -452,19 +473,16 @@
             alert('✅ 新增成功！');
             closeModal('addModal');
             
-            // 清空表單
             document.getElementById('newText').value = '';
             document.getElementById('newSource').value = '';
             document.getElementById('newTags').value = '';
             renderCard();
         }
 
-        // 設定：調整字體
         function changeFontSize(size) {
             document.documentElement.style.setProperty('--font-size', size);
         }
 
-        // 備份匯出：JSON
         function exportJSON() {
             const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(quotes, null, 2));
             const dlAnchor = document.createElement('a');
@@ -473,7 +491,6 @@
             dlAnchor.click();
         }
 
-        // 備份匯出：TXT (方便閱讀)
         function exportTXT() {
             let txtContent = "=== 我的勵志語與讀書筆記備份 ===\n\n";
             quotes.forEach((q, i) => {
@@ -494,7 +511,6 @@
             dlAnchor.click();
         }
 
-        // 備份匯入：JSON
         function importJSON(event) {
             const reader = new FileReader();
             reader.onload = function(e) {
@@ -516,7 +532,6 @@
             reader.readAsText(event.target.files[0]);
         }
 
-        // Modal 彈窗控制
         function openModal(id) { document.getElementById(id).style.display = 'block'; }
         function closeModal(id) { document.getElementById(id).style.display = 'none'; }
     </script>
