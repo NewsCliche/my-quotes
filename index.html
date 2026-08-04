@@ -1,0 +1,524 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>心靈與知識卡片庫</title>
+    <!-- PWA 設定 -->
+    <meta name="theme-color" content="#121212">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <link rel="manifest" href="data:application/manifest+json;charset=utf-8,%7B%22name%22%3A%22%E5%BF%83%E9%9D%86%E8%88%87%E7%9F%A5%E8%AD%98%E5%8D%A1%E7%89%87%E5%BA%AB%22%2C%22short_name%22%3A%22%E6%BF%80%E5%8B%B5%E8%AA%9E%22%2C%22start_url%22%3A%22.%22%2C%22display%22%3A%22standalone%22%2C%22background_color%22%3A%22%23121212%22%2C%22theme_color%22%3A%22%23121212%22%7D">
+    <style>
+        :root {
+            --bg-color: #121212;
+            --card-bg: #1e1e1e;
+            --text-color: #f0f0f0;
+            --accent-color: #d4af37; /* 高雅金 */
+            --sub-text: #aaaaaa;
+            --font-size: 26pt; /* 老花友善大字體 */
+            --font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans TC", sans-serif;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; user-select: none; }
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            font-family: var(--font-family);
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            overflow: hidden;
+        }
+
+        /* 頂部選單欄 */
+        header {
+            padding: 15px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background-color: rgba(0,0,0,0.3);
+        }
+        select, button {
+            font-size: 16pt;
+            padding: 8px 12px;
+            border-radius: 8px;
+            border: 1px solid #444;
+            background-color: #2a2a2a;
+            color: #fff;
+            cursor: pointer;
+        }
+
+        /* 卡片主區域 */
+        main {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            padding: 25px;
+            overflow-y: auto;
+            position: relative;
+        }
+        .tags-container {
+            margin-bottom: 15px;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+        .tag-badge {
+            font-size: 14pt;
+            background-color: #333;
+            color: var(--accent-color);
+            padding: 4px 10px;
+            border-radius: 15px;
+            border: 1px solid var(--accent-color);
+        }
+        .quote-text {
+            font-size: var(--font-size);
+            line-height: 1.5;
+            font-weight: 500;
+            margin-bottom: 25px;
+            letter-spacing: 1px;
+            word-break: break-word;
+        }
+        .quote-meta {
+            font-size: 16pt;
+            color: var(--sub-text);
+            text-align: right;
+            line-height: 1.6;
+        }
+
+        /* 註解抽屜頁 */
+        .notes-section {
+            margin-top: 20px;
+            border-top: 1px solid #333;
+            padding-top: 15px;
+        }
+        .notes-toggle {
+            font-size: 16pt;
+            color: var(--accent-color);
+            background: none;
+            border: none;
+            padding: 0;
+            text-decoration: underline;
+        }
+        .notes-list {
+            display: none;
+            margin-top: 15px;
+            max-height: 180px;
+            overflow-y: auto;
+        }
+        .note-item {
+            background-color: #262626;
+            padding: 10px;
+            border-radius: 6px;
+            margin-bottom: 8px;
+            font-size: 14pt;
+        }
+        .note-date { font-size: 11pt; color: #888; margin-bottom: 4px; }
+
+        /* 底部操作欄 */
+        footer {
+            padding: 20px;
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 12px;
+            background-color: rgba(0,0,0,0.4);
+        }
+        .btn-action {
+            font-size: 18pt;
+            padding: 15px 0;
+            font-weight: bold;
+            border: none;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 5px;
+        }
+        .btn-like { background-color: #2e7d32; color: white; }
+        .btn-next { background-color: #424242; color: white; }
+        .btn-dislike { background-color: #c62828; color: white; }
+
+        /* 彈窗對話盒 (Modal) */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background-color: rgba(0,0,0,0.85);
+            z-index: 100;
+            padding: 20px;
+            overflow-y: auto;
+        }
+        .modal-content {
+            background-color: var(--card-bg);
+            padding: 20px;
+            border-radius: 12px;
+            max-width: 600px;
+            margin: 30px auto;
+        }
+        .modal h2 { font-size: 20pt; margin-bottom: 15px; color: var(--accent-color); }
+        .modal input, .modal textarea {
+            width: 100%;
+            font-size: 16pt;
+            padding: 10px;
+            margin-bottom: 12px;
+            background-color: #2a2a2a;
+            color: #fff;
+            border: 1px solid #444;
+            border-radius: 6px;
+        }
+        .modal-buttons { display: flex; gap: 10px; justify-content: flex-end; margin-top: 15px; }
+    </style>
+</head>
+<body>
+
+    <!-- 頂部控制欄 -->
+    <header>
+        <select id="categorySelect" onchange="filterCategory()">
+            <option value="ALL">🎲 隨機全區</option>
+            <option value="FAV">❤️ 按過讚 (喜愛庫)</option>
+            <option value="SLEEP">🌙 沉睡庫 (隱藏中)</option>
+            <option value="心靈成長">🧠 心靈成長</option>
+            <option value="財富自由">💰 財富自由</option>
+            <option value="商業">💼 商業思維</option>
+            <option value="習慣養成">🌱 習慣養成</option>
+        </select>
+        <div>
+            <button onclick="openModal('addModal')">➕ 新增</button>
+            <button onclick="openModal('settingsModal')">⚙️ 設定</button>
+        </div>
+    </header>
+
+    <!-- 卡片內容區 -->
+    <main id="cardArea">
+        <div class="tags-container" id="cardTags"></div>
+        <div class="quote-text" id="cardText">載入中...</div>
+        <div class="quote-meta">
+            <div id="cardSource"></div>
+            <div id="cardDate" style="font-size: 12pt; margin-top: 4px;"></div>
+        </div>
+
+        <!-- 歷史留言註解區 -->
+        <div class="notes-section">
+            <button class="notes-toggle" onclick="toggleNotes()">💬 留言註解 (<span id="noteCount">0</span>)</button>
+            <button class="notes-toggle" style="margin-left: 15px;" onclick="openAddNoteModal()">➕ 寫心得</button>
+            <div class="notes-list" id="notesList"></div>
+        </div>
+    </main>
+
+    <!-- 底部操作按鈕 -->
+    <footer>
+        <button class="btn-action btn-like" onclick="handleAction('LIKE')">❤️ 讚</button>
+        <button class="btn-action btn-next" onclick="handleAction('NEXT')">➡️ 普通</button>
+        <button class="btn-action btn-dislike" onclick="handleAction('DISLIKE')">❌ 不喜歡</button>
+    </footer>
+
+    <!-- 新增語錄 彈窗 -->
+    <div id="addModal" class="modal">
+        <div class="modal-content">
+            <h2>新增語錄 / 讀書筆記</h2>
+            <textarea id="newText" rows="4" placeholder="輸入勵志語或書摘內容..."></textarea>
+            <input type="text" id="newSource" placeholder="來源 (例如: 《原子習慣》p.45)">
+            <input type="text" id="newTags" placeholder="標籤關鍵字 (半角逗號隔開，如: 商業,習慣)">
+            <div class="modal-buttons">
+                <button onclick="saveNewQuote()">儲存</button>
+                <button onclick="closeModal('addModal')">取消</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 撰寫心得 彈窗 -->
+    <div id="addNoteModal" class="modal">
+        <div class="modal-content">
+            <h2>新增註解心得</h2>
+            <textarea id="newNoteText" rows="3" placeholder="寫下當下的體悟..."></textarea>
+            <div class="modal-buttons">
+                <button onclick="saveNote()">發表心得</button>
+                <button onclick="closeModal('addNoteModal')">取消</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 設定與備份 彈窗 -->
+    <div id="settingsModal" class="modal">
+        <div class="modal-content">
+            <h2>系統設定與備份</h2>
+            
+            <label style="display:block; margin: 10px 0;">字體大小微調：</label>
+            <select id="fontSizeSelect" onchange="changeFontSize(this.value)" style="width:100%;">
+                <option value="22pt">中 (22pt)</option>
+                <option value="26pt" selected>大 (26pt - 推薦老花)</option>
+                <option value="32pt">特大 (32pt)</option>
+            </select>
+
+            <hr style="margin: 20px 0; border-color: #444;">
+            <h3 style="color:var(--accent-color); margin-bottom:10px;">資料安全備份</h3>
+            <button onclick="exportJSON()" style="width:100%; margin-bottom:10px;">📥 匯出 JSON 完整備份檔</button>
+            <button onclick="exportTXT()" style="width:100%; margin-bottom:10px;">📄 匯出 TXT 文字檔 (方便閱讀)</button>
+            
+            <label style="display:block; margin: 10px 0;">匯入 JSON 備份檔：</label>
+            <input type="file" id="importFile" accept=".json" onchange="importJSON(event)">
+
+            <div class="modal-buttons" style="margin-top: 20px;">
+                <button onclick="closeModal('settingsModal')">關閉</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // 內建預設 20 則精選語錄
+        const defaultQuotes = [
+            { id: 1, text: "我們重複做的事情，造就了我們；卓越不是一個行為，而是一個習慣。", source: "《原子習慣》", tags: ["心靈成長", "習慣養成"], date: "2026-08-04", liked: false, dislikes: 0, notes: [] },
+            { id: 2, text: "如果你找不到一個在你睡覺時還能掙錢的方法，你將會工作到死。", source: "華倫·巴菲特", tags: ["財富自由", "商業"], date: "2026-08-04", liked: false, dislikes: 0, notes: [] },
+            { id: 3, text: "資產就是能把錢放進你口袋的東西，負債則是把錢從你口袋掏走的東西。", source: "《富爸爸，窮爸爸》", tags: ["財富自由"], date: "2026-08-04", liked: false, dislikes: 0, notes: [] },
+            { id: 4, text: "複利是世界第八大奇蹟。知之者賺，不知者賠。", source: "愛因斯坦", tags: ["財富自由", "習慣養成"], date: "2026-08-04", liked: false, dislikes: 0, notes: [] },
+            { id: 5, text: "專注不是對你想做的事說『好』，而是對另外一百個好點子說『不』。", source: "史蒂夫·賈伯斯", tags: ["商業"], date: "2026-08-04", liked: false, dislikes: 0, notes: [] },
+            { id: 6, text: "你不會降臨到你目標的高度，你只會跌落到你系統的水平。", source: "《原子習慣》", tags: ["習慣養成", "商業"], date: "2026-08-04", liked: false, dislikes: 0, notes: [] },
+            { id: 7, text: "關注你能控制的事，放下你無法控制的事。", source: "斯多葛哲學", tags: ["心靈成長"], date: "2026-08-04", liked: false, dislikes: 0, notes: [] },
+            { id: 8, text: "投資自己的大腦，是報酬率最高、且永遠不會被扣稅或偷走的一筆資產。", source: "查理·芒格", tags: ["財富自由", "心靈成長"], date: "2026-08-04", liked: false, dislikes: 0, notes: [] }
+        ];
+
+        let quotes = [];
+        let currentQuote = null;
+
+        // 初始化
+        window.onload = function() {
+            const saved = localStorage.getItem('my_quotes_data');
+            if (saved) {
+                quotes = JSON.parse(saved);
+            } else {
+                quotes = defaultQuotes;
+                saveData();
+            }
+            renderCard();
+        };
+
+        function saveData() {
+            localStorage.setItem('my_quotes_data', JSON.stringify(quotes));
+        }
+
+        // 篩選與抽選卡片
+        function getFilteredQuotes() {
+            const cat = document.getElementById('categorySelect').value;
+            const oneYearAgo = new Date();
+            oneYearAgo.setFullYear(oneYearAgo.getFullYear() - 1);
+
+            return quotes.filter(q => {
+                // 累積滿5次正式刪除 (不回傳)
+                if (q.dislikes >= 5) return false;
+
+                if (cat === 'SLEEP') {
+                    // 沉睡庫：不喜歡 1~4 次且未滿一年
+                    return q.dislikes >= 1 && q.dislikes < 5;
+                }
+
+                // 一般選單不包含沉睡庫 (除非過期一年自動釋出)
+                if (q.dislikes >= 1 && q.dislikes < 5) {
+                    const quoteDate = new Date(q.date);
+                    if (quoteDate > oneYearAgo) return false; // 還在沉睡期
+                }
+
+                if (cat === 'ALL') return true;
+                if (cat === 'FAV') return q.liked;
+                return q.tags.includes(cat);
+            });
+        }
+
+        function renderCard() {
+            const pool = getFilteredQuotes();
+            const cardArea = document.getElementById('cardArea');
+            
+            if (pool.length === 0) {
+                document.getElementById('cardTags').innerHTML = '';
+                document.getElementById('cardText').innerText = '🎉 此分類暫無卡片，或卡片都在沉睡庫中。';
+                document.getElementById('cardSource').innerText = '';
+                document.getElementById('cardDate').innerText = '';
+                document.getElementById('noteCount').innerText = '0';
+                document.getElementById('notesList').innerHTML = '';
+                currentQuote = null;
+                return;
+            }
+
+            // 隨機抽選一則
+            const randomIndex = Math.floor(Math.random() * pool.length);
+            currentQuote = pool[randomIndex];
+
+            // 渲染介面
+            document.getElementById('cardText').innerText = currentQuote.text;
+            document.getElementById('cardSource').innerText = currentQuote.source ? `── ${currentQuote.source}` : '';
+            document.getElementById('cardDate').innerText = `新增日期：${currentQuote.date}`;
+            
+            // 標籤
+            const tagsHtml = currentQuote.tags.map(t => `<span class="tag-badge">#${t}</span>`).join('');
+            document.getElementById('cardTags').innerHTML = tagsHtml;
+
+            // 註解渲染
+            renderNotes();
+        }
+
+        function filterCategory() {
+            renderCard();
+        }
+
+        // 操作：讚 / 普通 / 不喜歡
+        function handleAction(type) {
+            if (!currentQuote) return;
+
+            if (type === 'LIKE') {
+                currentQuote.liked = !currentQuote.liked;
+                alert(currentQuote.liked ? '❤️ 已加入喜愛庫' : '💔 已取消喜愛');
+            } else if (type === 'DISLIKE') {
+                currentQuote.dislikes += 1;
+                if (currentQuote.dislikes >= 5) {
+                    alert('❌ 已累積不喜歡滿 5 次，正式從清單刪除！');
+                } else {
+                    alert(`🌙 不喜歡次數：${currentQuote.dislikes} 次。卡片已移入沉睡庫（將隱藏 1 年）。`);
+                }
+            }
+
+            saveData();
+            renderCard();
+        }
+
+        // 註解相關
+        function toggleNotes() {
+            const list = document.getElementById('notesList');
+            list.style.display = list.style.display === 'block' ? 'none' : 'block';
+        }
+
+        function renderNotes() {
+            if (!currentQuote) return;
+            const notes = currentQuote.notes || [];
+            document.getElementById('noteCount').innerText = notes.length;
+            
+            // 從最新排到最舊
+            const sortedNotes = [...notes].reverse();
+            const html = sortedNotes.map(n => `
+                <div class="note-item">
+                    <div class="note-date">${n.timestamp}</div>
+                    <div>${n.content}</div>
+                </div>
+            `).join('');
+            document.getElementById('notesList').innerHTML = html;
+        }
+
+        function openAddNoteModal() {
+            if (!currentQuote) return;
+            openModal('addNoteModal');
+        }
+
+        function saveNote() {
+            const text = document.getElementById('newNoteText').value.trim();
+            if (!text) return;
+
+            const now = new Date();
+            const timeStr = `${now.getFullYear()}-${(now.getMonth()+1).toString().padStart(2,'0')}-${now.getDate().toString().padStart(2,'0')} ${now.getHours().toString().padStart(2,'0')}:${now.getMinutes().toString().padStart(2,'0')}`;
+
+            if (!currentQuote.notes) currentQuote.notes = [];
+            currentQuote.notes.push({ timestamp: timeStr, content: text });
+
+            saveData();
+            renderNotes();
+            document.getElementById('newNoteText').value = '';
+            closeModal('addNoteModal');
+        }
+
+        // 新增語錄
+        function saveNewQuote() {
+            const text = document.getElementById('newText').value.trim();
+            const source = document.getElementById('newSource').value.trim();
+            const tagsStr = document.getElementById('newTags').value.trim();
+
+            if (!text) { alert('請輸入內容'); return; }
+
+            const tags = tagsStr ? tagsStr.split(/[,，]/).map(t => t.trim()) : ["一般"];
+            const today = new Date().toISOString().split('T')[0];
+
+            const newQ = {
+                id: Date.now(),
+                text: text,
+                source: source,
+                tags: tags,
+                date: today,
+                liked: false,
+                dislikes: 0,
+                notes: []
+            };
+
+            quotes.push(newQ);
+            saveData();
+            alert('✅ 新增成功！');
+            closeModal('addModal');
+            
+            // 清空表單
+            document.getElementById('newText').value = '';
+            document.getElementById('newSource').value = '';
+            document.getElementById('newTags').value = '';
+            renderCard();
+        }
+
+        // 設定：調整字體
+        function changeFontSize(size) {
+            document.documentElement.style.setProperty('--font-size', size);
+        }
+
+        // 備份匯出：JSON
+        function exportJSON() {
+            const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(quotes, null, 2));
+            const dlAnchor = document.createElement('a');
+            dlAnchor.setAttribute("href", dataStr);
+            dlAnchor.setAttribute("download", `quotes_backup_${new Date().toISOString().split('T')[0]}.json`);
+            dlAnchor.click();
+        }
+
+        // 備份匯出：TXT (方便閱讀)
+        function exportTXT() {
+            let txtContent = "=== 我的勵志語與讀書筆記備份 ===\n\n";
+            quotes.forEach((q, i) => {
+                txtContent += `${i+1}. ${q.text}\n`;
+                if(q.source) txtContent += `   來源：${q.source}\n`;
+                txtContent += `   標籤：${q.tags.join(', ')} | 日期：${q.date}\n`;
+                if(q.notes && q.notes.length > 0) {
+                    txtContent += `   心得註解：\n`;
+                    q.notes.forEach(n => txtContent += `     - [${n.timestamp}] ${n.content}\n`);
+                }
+                txtContent += `\n-----------------------------------\n\n`;
+            });
+
+            const dataStr = "data:text/plain;charset=utf-8," + encodeURIComponent(txtContent);
+            const dlAnchor = document.createElement('a');
+            dlAnchor.setAttribute("href", dataStr);
+            dlAnchor.setAttribute("download", `quotes_readable_${new Date().toISOString().split('T')[0]}.txt`);
+            dlAnchor.click();
+        }
+
+        // 備份匯入：JSON
+        function importJSON(event) {
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const imported = JSON.parse(e.target.result);
+                    if (Array.isArray(imported)) {
+                        quotes = imported;
+                        saveData();
+                        alert('✅ 備份資料匯入成功！');
+                        renderCard();
+                        closeModal('settingsModal');
+                    } else {
+                        alert('❌ 檔案格式不正確');
+                    }
+                } catch(err) {
+                    alert('❌ 解析 JSON 檔案失敗');
+                }
+            };
+            reader.readAsText(event.target.files[0]);
+        }
+
+        // Modal 彈窗控制
+        function openModal(id) { document.getElementById(id).style.display = 'block'; }
+        function closeModal(id) { document.getElementById(id).style.display = 'none'; }
+    </script>
+</body>
+</html>
