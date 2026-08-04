@@ -88,13 +88,13 @@
 
         #toast.show { visibility: visible; opacity: 1; }
 
-        /* 主卡片區域 (美化質感卡片) */
+        /* 主卡片區域 */
         main {
             flex: 1;
             display: flex;
             flex-direction: column;
             justify-content: center;
-            padding: 20px;
+            padding: 16px;
             position: relative;
             overflow: hidden;
         }
@@ -104,9 +104,11 @@
             border: 1px solid #333;
             border-left: 4px solid var(--accent-color);
             border-radius: 16px;
-            padding: 24px;
+            padding: 20px;
             box-shadow: 0 8px 24px rgba(0,0,0,0.4);
-            max-height: 100%;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
             overflow-y: auto;
             transition: opacity 0.2s ease-out;
         }
@@ -115,11 +117,11 @@
             text-align: center;
             font-size: 11pt;
             color: #666;
-            margin-bottom: 12px;
+            margin-bottom: 10px;
         }
 
         .tags-container {
-            margin-bottom: 16px;
+            margin-bottom: 14px;
             display: flex;
             flex-wrap: wrap;
             gap: 8px;
@@ -138,7 +140,7 @@
             font-size: var(--font-size);
             line-height: 1.55;
             font-weight: 500;
-            margin-bottom: 20px;
+            margin-bottom: 16px;
             letter-spacing: 0.5px;
             word-break: break-word;
         }
@@ -148,13 +150,14 @@
             color: var(--sub-text);
             text-align: right;
             line-height: 1.5;
+            margin-bottom: 15px;
         }
 
-        /* 註解列表與換行修復 */
+        /* 註解列表與編輯/刪除按鈕 */
         .notes-section {
-            margin-top: 25px;
+            margin-top: auto;
             border-top: 1px dashed #444;
-            padding-top: 15px;
+            padding-top: 14px;
         }
 
         .notes-toggle-bar {
@@ -175,29 +178,44 @@
 
         .notes-list {
             display: none;
-            margin-top: 12px;
-            max-height: 220px;
+            margin-top: 10px;
+            max-height: 240px;
             overflow-y: auto;
         }
 
         .note-item {
             background-color: #262626;
-            padding: 12px 14px;
+            padding: 12px;
             border-radius: 8px;
             margin-bottom: 10px;
             font-size: 14pt;
             line-height: 1.6;
             border-left: 3px solid var(--accent-color);
-            /* 關鍵修復：完美保留 Enter 換行與空格格式 */
-            white-space: pre-wrap; 
+            white-space: pre-wrap; /* 完美保留換行格式 */
             word-break: break-word;
+            position: relative;
+        }
+
+        .note-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 6px;
         }
 
         .note-date {
             font-size: 11pt;
             color: var(--accent-color);
-            margin-bottom: 6px;
             font-weight: bold;
+        }
+
+        .note-actions button {
+            font-size: 11pt;
+            padding: 2px 8px;
+            background-color: #333;
+            border: 1px solid #555;
+            border-radius: 4px;
+            margin-left: 4px;
         }
 
         /* 底部操作欄 */
@@ -240,11 +258,11 @@
 
         .modal-content {
             background-color: var(--card-bg);
-            padding: 22px;
+            padding: 20px;
             border-radius: 16px;
             width: 100%;
             max-width: 650px;
-            min-height: 75vh; /* 彈窗高度占用螢幕 75% 以上 */
+            min-height: 70vh;
             margin: 10px auto;
             display: flex;
             flex-direction: column;
@@ -262,10 +280,9 @@
             border-radius: 8px;
         }
 
-        /* 心得專用大輸入框 (占用一半以上版面) */
         .modal textarea.large-textarea {
-            flex: 1; /* 自動填滿彈窗剩餘空間 */
-            min-height: 280px; /* 強制最小高度 280px (約 10~12 行文字) */
+            flex: 1;
+            min-height: 250px;
             width: 100%;
             font-size: 16pt;
             line-height: 1.6;
@@ -309,7 +326,7 @@
         <!-- 卡片內容區 -->
         <main id="cardArea">
             <div class="card-box" id="cardWrapper">
-                <div class="swipe-hint">💡 上下或左右滑動可切換下一張</div>
+                <div class="swipe-hint">💡 左右滑動可切換下一張</div>
                 <div class="tags-container" id="cardTags"></div>
                 <div class="quote-text" id="cardText">載入中...</div>
                 <div class="quote-meta">
@@ -350,13 +367,13 @@
         </div>
     </div>
 
-    <!-- 撰寫心得 彈窗 (超大畫板，占用一半以上版面) -->
+    <!-- 撰寫/編輯心得 彈窗 -->
     <div id="addNoteModal" class="modal">
         <div class="modal-content">
-            <h2>寫下您的閱讀心得與體悟</h2>
+            <h2 id="noteModalTitle">寫下您的閱讀心得與體悟</h2>
             <textarea id="newNoteText" class="large-textarea" placeholder="在此輸入您的心得體悟...&#10;支援換行與條列：&#10;1. 第一點感悟&#10;2. 第二點思考..."></textarea>
             <div class="modal-buttons">
-                <button onclick="saveNote()">發表心得</button>
+                <button onclick="saveNote()">儲存心得</button>
                 <button onclick="closeModal('addNoteModal')">取消</button>
             </div>
         </div>
@@ -402,6 +419,7 @@
 
         let quotes = [];
         let currentQuote = null;
+        let editingNoteIndex = null; // 當前正編輯的心得索引
 
         window.onload = function() {
             const saved = localStorage.getItem('my_quotes_data');
@@ -521,6 +539,7 @@
             }
         }
 
+        // 僅保留左右滑動切換 (移除上下滑動)
         function setupTouchEvents() {
             const cardArea = document.getElementById('cardArea');
             const cardWrapper = document.getElementById('cardWrapper');
@@ -537,7 +556,8 @@
                 let diffX = endX - startX;
                 let diffY = endY - startY;
 
-                if (Math.abs(diffX) > 50 || Math.abs(diffY) > 50) {
+                // 水平滑動距離遠大於垂直滑動才觸發切換
+                if (Math.abs(diffX) > 60 && Math.abs(diffX) > Math.abs(diffY) * 1.5) {
                     cardWrapper.style.opacity = '0';
                     setTimeout(() => {
                         renderCard();
@@ -562,24 +582,51 @@
             list.style.display = list.style.display === 'block' ? 'none' : 'block';
         }
 
+        // 渲染心得列表 (加入編輯與刪除按鈕)
         function renderNotes() {
             if (!currentQuote) return;
             const notes = currentQuote.notes || [];
             document.getElementById('noteCount').innerText = notes.length;
             
-            const sortedNotes = [...notes].reverse();
-            const html = sortedNotes.map(n => `
+            // 從最新排到最舊（保留原陣列真實 index 以利編輯與刪除）
+            const html = notes.map((n, idx) => `
                 <div class="note-item">
-                    <div class="note-date">📅 ${n.timestamp}</div>
+                    <div class="note-header">
+                        <span class="note-date">📅 ${n.timestamp}</span>
+                        <span class="note-actions">
+                            <button onclick="editNote(${idx})">✏️ 編輯</button>
+                            <button onclick="deleteNote(${idx})">🗑️ 刪除</button>
+                        </span>
+                    </div>
                     <div>${n.content}</div>
                 </div>
-            `).join('');
+            `).reverse().join('');
+            
             document.getElementById('notesList').innerHTML = html;
         }
 
         function openAddNoteModal() {
             if (!currentQuote) return;
+            editingNoteIndex = null;
+            document.getElementById('noteModalTitle').innerText = "寫下您的閱讀心得與體悟";
+            document.getElementById('newNoteText').value = "";
             openModal('addNoteModal');
+        }
+
+        function editNote(index) {
+            editingNoteIndex = index;
+            document.getElementById('noteModalTitle').innerText = "編輯您的心得體悟";
+            document.getElementById('newNoteText').value = currentQuote.notes[index].content;
+            openModal('addNoteModal');
+        }
+
+        function deleteNote(index) {
+            if (confirm("確定要刪除這條心得嗎？")) {
+                currentQuote.notes.splice(index, 1);
+                saveData();
+                renderNotes();
+                showToast("🗑️ 心得已刪除");
+            }
         }
 
         function saveNote() {
@@ -590,13 +637,22 @@
             const timeStr = `${now.getFullYear()}-${(now.getMonth()+1).toString().padStart(2,'0')}-${now.getDate().toString().padStart(2,'0')} ${now.getHours().toString().padStart(2,'0')}:${now.getMinutes().toString().padStart(2,'0')}`;
 
             if (!currentQuote.notes) currentQuote.notes = [];
-            currentQuote.notes.push({ timestamp: timeStr, content: text });
+
+            if (editingNoteIndex !== null) {
+                // 修改舊心得
+                currentQuote.notes[editingNoteIndex].content = text;
+                currentQuote.notes[editingNoteIndex].timestamp = `${timeStr} (已編輯)`;
+                showToast('✏️ 心得已更新');
+            } else {
+                // 新增心得
+                currentQuote.notes.push({ timestamp: timeStr, content: text });
+                showToast('✍️ 心得已發表');
+            }
 
             saveData();
             renderNotes();
             document.getElementById('newNoteText').value = '';
             closeModal('addNoteModal');
-            showToast('✍️ 心得已發表');
         }
 
         function saveNewQuote() {
