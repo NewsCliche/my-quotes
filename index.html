@@ -3,16 +3,12 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>勵志語</title>
+    <title>勵志語卡片</title>
     
-    <!-- PWA 全螢幕與獨立 App 規格設定 -->
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="theme-color" content="#121212">
-    
-    <!-- Web App Manifest (使 Android 辨識為獨立 App) -->
-    <link rel="manifest" href="data:application/manifest+json;charset=utf-8,%7B%22name%22%3A%22%E6%BF%80%E5%8B%B5%E8%AA%9E%E5%8D%A1%E7%89%87%22%2C%22short_name%22%3A%22%E6%BF%80%E5%8B%B5%E8%AA%9E%22%2C%22start_url%22%3A%22.%2F%22%2C%22display%22%3A%22standalone%22%2C%22orientation%22%3A%22portrait%22%2C%22background_color%22%3A%22%23121212%22%2C%22theme_color%22%3A%22%23121212%22%7D">
 
     <style>
         :root {
@@ -21,7 +17,7 @@
             --text-color: #f0f0f0;
             --accent-color: #d4af37;
             --sub-text: #aaaaaa;
-            --font-size: 24pt; /* 老花友善大字體 */
+            --font-size: 26pt; /* 老花友善大字體 */
             --font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
         }
 
@@ -33,33 +29,35 @@
             background-color: var(--bg-color);
             color: var(--text-color);
             font-family: var(--font-family);
-            overflow: hidden; /* 防止整體頁面亂滑 */
+            overflow: hidden;
+            touch-action: pan-y;
         }
 
-        /* 滿版主容器 (考量手機安全邊界) */
         .app-container {
             display: flex;
             flex-direction: column;
             height: 100vh;
-            height: 100dvh; /* 自動扣除手機狀態列與導覽列高度 */
+            height: 100dvh;
             padding-top: env(safe-area-inset-top);
             padding-bottom: env(safe-area-inset-bottom);
+            position: relative;
         }
 
         /* 頂部控制欄 */
         header {
-            padding: 12px 16px;
+            padding: 10px 14px;
             display: flex;
             justify-content: space-between;
             align-items: center;
             background-color: #1a1a1a;
             border-bottom: 1px solid #2d2d2d;
             flex-shrink: 0;
+            z-index: 10;
         }
 
         select, button {
-            font-size: 15pt;
-            padding: 8px 12px;
+            font-size: 14pt;
+            padding: 6px 10px;
             border-radius: 8px;
             border: 1px solid #444;
             background-color: #2a2a2a;
@@ -67,18 +65,55 @@
             cursor: pointer;
         }
 
-        /* 卡片內容區 (支援內部順暢滑動) */
+        /* 自動消失的無干擾輕量提示 (Toast) */
+        #toast {
+            visibility: hidden;
+            min-width: 180px;
+            background-color: rgba(212, 175, 55, 0.95);
+            color: #121212;
+            font-weight: bold;
+            text-align: center;
+            border-radius: 25px;
+            padding: 10px 20px;
+            position: absolute;
+            z-index: 1000;
+            left: 50%;
+            top: 70px;
+            transform: translateX(-50%);
+            font-size: 14pt;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.5);
+            opacity: 0;
+            transition: opacity 0.3s, visibility 0.3s;
+        }
+
+        #toast.show {
+            visibility: visible;
+            opacity: 1;
+        }
+
+        /* 可滑動卡片主要區域 */
         main {
             flex: 1;
             display: flex;
             flex-direction: column;
-            padding: 20px;
-            overflow-y: auto; /* 文字內容多時可滑動 */
-            -webkit-overflow-scrolling: touch;
+            justify-content: center;
+            padding: 25px 20px;
+            position: relative;
+            overflow: hidden;
         }
 
         .card-wrapper {
-            margin: auto 0; /* 垂直居中，內容過長時向上伸展 */
+            transition: transform 0.2s ease-out, opacity 0.2s ease-out;
+        }
+
+        .swipe-hint {
+            position: absolute;
+            top: 10px;
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 11pt;
+            color: #666;
+            pointer-events: none;
         }
 
         .tags-container {
@@ -117,11 +152,11 @@
         .notes-section {
             margin-top: 25px;
             border-top: 1px dashed #333;
-            padding-top: 15px;
+            padding-top: 12px;
         }
 
         .notes-toggle {
-            font-size: 15pt;
+            font-size: 14pt;
             color: var(--accent-color);
             background: none;
             border: none;
@@ -131,25 +166,25 @@
 
         .notes-list {
             display: none;
-            margin-top: 12px;
-            max-height: 200px;
+            margin-top: 10px;
+            max-height: 150px;
             overflow-y: auto;
         }
 
         .note-item {
             background-color: #242424;
-            padding: 10px 12px;
-            border-radius: 8px;
-            margin-bottom: 8px;
-            font-size: 14pt;
+            padding: 8px 12px;
+            border-radius: 6px;
+            margin-bottom: 6px;
+            font-size: 13pt;
             border-left: 3px solid var(--accent-color);
         }
 
-        .note-date { font-size: 10pt; color: #888; margin-bottom: 3px; }
+        .note-date { font-size: 10pt; color: #888; margin-bottom: 2px; }
 
-        /* 底部操作欄 (抬高邊界避免被手機底欄遮擋) */
+        /* 底部操作欄 */
         footer {
-            padding: 12px 16px 20px 16px;
+            padding: 10px 14px 16px 14px;
             display: grid;
             grid-template-columns: 1fr 1fr 1fr;
             gap: 10px;
@@ -160,7 +195,7 @@
 
         .btn-action {
             font-size: 16pt;
-            padding: 14px 0;
+            padding: 12px 0;
             font-weight: bold;
             border: none;
             border-radius: 10px;
@@ -170,6 +205,7 @@
         }
 
         .btn-like { background-color: #2e7d32; color: white; }
+        .btn-like.is-liked { background-color: #d4af37; color: #121212; }
         .btn-next { background-color: #3a3a3a; color: white; }
         .btn-dislike { background-color: #c62828; color: white; }
 
@@ -209,6 +245,9 @@
 <body>
 
     <div class="app-container">
+        <!-- 無干擾提示框 -->
+        <div id="toast">提示訊息</div>
+
         <!-- 頂部控制欄 -->
         <header>
             <select id="categorySelect" onchange="filterCategory()">
@@ -221,14 +260,16 @@
                 <option value="習慣養成">🌱 習慣養成</option>
             </select>
             <div>
-                <button onclick="openModal('addModal')">➕ 新增</button>
-                <button onclick="openModal('settingsModal')">⚙️ 設定</button>
+                <button onclick="toggleFullScreen()" title="全螢幕切換">⛶</button>
+                <button onclick="openModal('addModal')">➕</button>
+                <button onclick="openModal('settingsModal')">⚙️</button>
             </div>
         </header>
 
         <!-- 卡片內容區 -->
         <main id="cardArea">
-            <div class="card-wrapper">
+            <div class="swipe-hint">💡 上下或左右滑動可切換下一張</div>
+            <div class="card-wrapper" id="cardWrapper">
                 <div class="tags-container" id="cardTags"></div>
                 <div class="quote-text" id="cardText">載入中...</div>
                 <div class="quote-meta">
@@ -247,8 +288,8 @@
 
         <!-- 底部操作按鈕 -->
         <footer>
-            <button class="btn-action btn-like" onclick="handleAction('LIKE')">❤️ 讚</button>
-            <button class="btn-action btn-next" onclick="handleAction('NEXT')">➡️ 普通</button>
+            <button class="btn-action btn-like" id="likeBtn" onclick="handleAction('LIKE')">❤️ 讚</button>
+            <button class="btn-action btn-next" onclick="handleAction('NEXT')">➡️ 下一張</button>
             <button class="btn-action btn-dislike" onclick="handleAction('DISLIKE')">❌ 不喜歡</button>
         </footer>
     </div>
@@ -287,8 +328,8 @@
             <label style="display:block; margin: 10px 0;">字體大小微調：</label>
             <select id="fontSizeSelect" onchange="changeFontSize(this.value)" style="width:100%;">
                 <option value="20pt">中 (20pt)</option>
-                <option value="24pt" selected>大 (24pt - 推薦)</option>
-                <option value="28pt">特大 (28pt)</option>
+                <option value="26pt" selected>大 (26pt - 推薦老花)</option>
+                <option value="32pt">特大 (32pt)</option>
             </select>
 
             <hr style="margin: 20px 0; border-color: #444;">
@@ -329,10 +370,20 @@
                 saveData();
             }
             renderCard();
+            setupTouchEvents();
         };
 
         function saveData() {
             localStorage.setItem('my_quotes_data', JSON.stringify(quotes));
+        }
+
+        function showToast(msg) {
+            const toast = document.getElementById('toast');
+            toast.innerText = msg;
+            toast.classList.add('show');
+            setTimeout(() => {
+                toast.classList.remove('show');
+            }, 1500);
         }
 
         function getFilteredQuotes() {
@@ -360,6 +411,7 @@
 
         function renderCard() {
             const pool = getFilteredQuotes();
+            const likeBtn = document.getElementById('likeBtn');
             
             if (pool.length === 0) {
                 document.getElementById('cardTags').innerHTML = '';
@@ -369,6 +421,7 @@
                 document.getElementById('noteCount').innerText = '0';
                 document.getElementById('notesList').innerHTML = '';
                 currentQuote = null;
+                likeBtn.classList.remove('is-liked');
                 return;
             }
 
@@ -382,6 +435,15 @@
             const tagsHtml = currentQuote.tags.map(t => `<span class="tag-badge">#${t}</span>`).join('');
             document.getElementById('cardTags').innerHTML = tagsHtml;
 
+            // 按鈕狀態反饋
+            if (currentQuote.liked) {
+                likeBtn.classList.add('is-liked');
+                likeBtn.innerText = '❤️ 已讚';
+            } else {
+                likeBtn.classList.remove('is-liked');
+                likeBtn.innerText = '❤️ 讚';
+            }
+
             renderNotes();
         }
 
@@ -392,18 +454,67 @@
 
             if (type === 'LIKE') {
                 currentQuote.liked = !currentQuote.liked;
-                alert(currentQuote.liked ? '❤️ 已加入喜愛庫' : '💔 已取消喜愛');
+                saveData();
+                
+                // 狀態與無干擾提示
+                const likeBtn = document.getElementById('likeBtn');
+                if (currentQuote.liked) {
+                    likeBtn.classList.add('is-liked');
+                    likeBtn.innerText = '❤️ 已讚';
+                    showToast('❤️ 已加入喜愛庫');
+                } else {
+                    likeBtn.classList.remove('is-liked');
+                    likeBtn.innerText = '❤️ 讚';
+                    showToast('💔 已取消喜愛');
+                }
             } else if (type === 'DISLIKE') {
                 currentQuote.dislikes += 1;
+                saveData();
                 if (currentQuote.dislikes >= 5) {
-                    alert('❌ 已累積不喜歡滿 5 次，正式刪除！');
+                    showToast('❌ 已累積不喜歡 5 次，正式刪除');
                 } else {
-                    alert(`🌙 不喜歡次數：${currentQuote.dislikes} 次。卡片已移入沉睡庫（將隱藏 1 年）。`);
+                    showToast(`🌙 已移入沉睡庫 (${currentQuote.dislikes}/5)`);
                 }
+                renderCard();
+            } else if (type === 'NEXT') {
+                renderCard();
             }
+        }
 
-            saveData();
-            renderCard();
+        function setupTouchEvents() {
+            const cardArea = document.getElementById('cardArea');
+            const cardWrapper = document.getElementById('cardWrapper');
+            let startX = 0, startY = 0;
+
+            cardArea.addEventListener('touchstart', e => {
+                startX = e.touches[0].clientX;
+                startY = e.touches[0].clientY;
+            }, { passive: true });
+
+            cardArea.addEventListener('touchend', e => {
+                let endX = e.changedTouches[0].clientX;
+                let endY = e.changedTouches[0].clientY;
+                let diffX = endX - startX;
+                let diffY = endY - startY;
+
+                if (Math.abs(diffX) > 50 || Math.abs(diffY) > 50) {
+                    cardWrapper.style.opacity = '0';
+                    setTimeout(() => {
+                        renderCard();
+                        cardWrapper.style.opacity = '1';
+                    }, 150);
+                }
+            }, { passive: true });
+        }
+
+        function toggleFullScreen() {
+            if (!document.fullscreenElement) {
+                document.documentElement.requestFullscreen().catch(err => {
+                    showToast("請使用『新增至主畫面』開啟");
+                });
+            } else {
+                if (document.exitFullscreen) document.exitFullscreen();
+            }
         }
 
         function toggleNotes() {
@@ -445,6 +556,7 @@
             renderNotes();
             document.getElementById('newNoteText').value = '';
             closeModal('addNoteModal');
+            showToast('💬 心得已發表');
         }
 
         function saveNewQuote() {
@@ -452,7 +564,7 @@
             const source = document.getElementById('newSource').value.trim();
             const tagsStr = document.getElementById('newTags').value.trim();
 
-            if (!text) { alert('請輸入內容'); return; }
+            if (!text) { showToast('請輸入內容'); return; }
 
             const tags = tagsStr ? tagsStr.split(/[,，]/).map(t => t.trim()) : ["一般"];
             const today = new Date().toISOString().split('T')[0];
@@ -470,7 +582,7 @@
 
             quotes.push(newQ);
             saveData();
-            alert('✅ 新增成功！');
+            showToast('✅ 新增成功！');
             closeModal('addModal');
             
             document.getElementById('newText').value = '';
@@ -519,14 +631,14 @@
                     if (Array.isArray(imported)) {
                         quotes = imported;
                         saveData();
-                        alert('✅ 備份資料匯入成功！');
+                        showToast('✅ 備份資料匯入成功！');
                         renderCard();
                         closeModal('settingsModal');
                     } else {
-                        alert('❌ 檔案格式不正確');
+                        showToast('❌ 檔案格式不正確');
                     }
                 } catch(err) {
-                    alert('❌ 解析 JSON 檔案失敗');
+                    showToast('❌ 解析 JSON 檔案失敗');
                 }
             };
             reader.readAsText(event.target.files[0]);
