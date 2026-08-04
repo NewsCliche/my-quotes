@@ -15,7 +15,7 @@
             --bg-color: #121212;
             --card-bg: #1e1e1e;
             --text-color: #f0f0f0;
-            --accent-color: #d4af37;
+            --accent-color: #d4af37; /* 高雅金 */
             --sub-text: #aaaaaa;
             --font-size: 26pt; /* 老花友善大字體 */
             --font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
@@ -45,7 +45,7 @@
 
         /* 頂部控制欄 */
         header {
-            padding: 10px 14px;
+            padding: 12px 16px;
             display: flex;
             justify-content: space-between;
             align-items: center;
@@ -57,7 +57,7 @@
 
         select, button {
             font-size: 14pt;
-            padding: 6px 10px;
+            padding: 8px 12px;
             border-radius: 8px;
             border: 1px solid #444;
             background-color: #2a2a2a;
@@ -65,7 +65,7 @@
             cursor: pointer;
         }
 
-        /* 自動消失的無干擾輕量提示 (Toast) */
+        /* 輕量提示 (Toast) */
         #toast {
             visibility: hidden;
             min-width: 180px;
@@ -86,58 +86,60 @@
             transition: opacity 0.3s, visibility 0.3s;
         }
 
-        #toast.show {
-            visibility: visible;
-            opacity: 1;
-        }
+        #toast.show { visibility: visible; opacity: 1; }
 
-        /* 可滑動卡片主要區域 */
+        /* 主卡片區域 (美化質感卡片) */
         main {
             flex: 1;
             display: flex;
             flex-direction: column;
             justify-content: center;
-            padding: 25px 20px;
+            padding: 20px;
             position: relative;
             overflow: hidden;
         }
 
-        .card-wrapper {
-            transition: transform 0.2s ease-out, opacity 0.2s ease-out;
+        .card-box {
+            background-color: var(--card-bg);
+            border: 1px solid #333;
+            border-left: 4px solid var(--accent-color);
+            border-radius: 16px;
+            padding: 24px;
+            box-shadow: 0 8px 24px rgba(0,0,0,0.4);
+            max-height: 100%;
+            overflow-y: auto;
+            transition: opacity 0.2s ease-out;
         }
 
         .swipe-hint {
-            position: absolute;
-            top: 10px;
-            left: 50%;
-            transform: translateX(-50%);
+            text-align: center;
             font-size: 11pt;
             color: #666;
-            pointer-events: none;
+            margin-bottom: 12px;
         }
 
         .tags-container {
-            margin-bottom: 15px;
+            margin-bottom: 16px;
             display: flex;
             flex-wrap: wrap;
             gap: 8px;
         }
 
         .tag-badge {
-            font-size: 13pt;
+            font-size: 12pt;
             background-color: #2a2a2a;
             color: var(--accent-color);
             padding: 4px 12px;
             border-radius: 20px;
-            border: 1px solid var(--accent-color);
+            border: 1px solid #444;
         }
 
         .quote-text {
             font-size: var(--font-size);
-            line-height: 1.5;
+            line-height: 1.55;
             font-weight: 500;
             margin-bottom: 20px;
-            letter-spacing: 1px;
+            letter-spacing: 0.5px;
             word-break: break-word;
         }
 
@@ -148,11 +150,18 @@
             line-height: 1.5;
         }
 
-        /* 註解抽屜區 */
+        /* 註解列表與換行修復 */
         .notes-section {
             margin-top: 25px;
-            border-top: 1px dashed #333;
-            padding-top: 12px;
+            border-top: 1px dashed #444;
+            padding-top: 15px;
+        }
+
+        .notes-toggle-bar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
         }
 
         .notes-toggle {
@@ -166,29 +175,37 @@
 
         .notes-list {
             display: none;
-            margin-top: 10px;
-            max-height: 180px;
+            margin-top: 12px;
+            max-height: 220px;
             overflow-y: auto;
         }
 
         .note-item {
-            background-color: #242424;
-            padding: 10px 12px;
-            border-radius: 6px;
-            margin-bottom: 8px;
+            background-color: #262626;
+            padding: 12px 14px;
+            border-radius: 8px;
+            margin-bottom: 10px;
             font-size: 14pt;
-            line-height: 1.5;
+            line-height: 1.6;
             border-left: 3px solid var(--accent-color);
+            /* 關鍵修復：完美保留 Enter 換行與空格格式 */
+            white-space: pre-wrap; 
+            word-break: break-word;
         }
 
-        .note-date { font-size: 10pt; color: #888; margin-bottom: 4px; }
+        .note-date {
+            font-size: 11pt;
+            color: var(--accent-color);
+            margin-bottom: 6px;
+            font-weight: bold;
+        }
 
         /* 底部操作欄 */
         footer {
-            padding: 10px 14px 16px 14px;
+            padding: 12px 16px 20px 16px;
             display: grid;
             grid-template-columns: 1fr 1fr 1fr;
-            gap: 10px;
+            gap: 12px;
             background-color: #1a1a1a;
             border-top: 1px solid #2d2d2d;
             flex-shrink: 0;
@@ -196,21 +213,21 @@
 
         .btn-action {
             font-size: 16pt;
-            padding: 12px 0;
+            padding: 14px 0;
             font-weight: bold;
             border: none;
-            border-radius: 10px;
+            border-radius: 12px;
             display: flex;
             align-items: center;
             justify-content: center;
         }
 
         .btn-like { background-color: #2e7d32; color: white; }
-        .btn-like.is-liked { background-color: #d4af37; color: #121212; }
+        .btn-like.is-liked { background-color: var(--accent-color); color: #121212; }
         .btn-next { background-color: #3a3a3a; color: white; }
         .btn-dislike { background-color: #c62828; color: white; }
 
-        /* 大視窗彈窗對話盒 (Modal) */
+        /* 加大版彈窗對話盒 (Modal) */
         .modal {
             display: none;
             position: fixed;
@@ -224,10 +241,13 @@
         .modal-content {
             background-color: var(--card-bg);
             padding: 22px;
-            border-radius: 14px;
+            border-radius: 16px;
             width: 100%;
-            max-width: 650px; /* 加寬彈窗 */
-            margin: 15px auto;
+            max-width: 650px;
+            min-height: 75vh; /* 彈窗高度占用螢幕 75% 以上 */
+            margin: 10px auto;
+            display: flex;
+            flex-direction: column;
         }
 
         .modal h2 { font-size: 18pt; margin-bottom: 15px; color: var(--accent-color); }
@@ -242,22 +262,25 @@
             border-radius: 8px;
         }
 
-        /* 放大輸入文字框 (Textarea) */
-        .modal textarea {
+        /* 心得專用大輸入框 (占用一半以上版面) */
+        .modal textarea.large-textarea {
+            flex: 1; /* 自動填滿彈窗剩餘空間 */
+            min-height: 280px; /* 強制最小高度 280px (約 10~12 行文字) */
             width: 100%;
-            font-size: 16pt; /* 大字體方便閱讀與打字 */
+            font-size: 16pt;
             line-height: 1.6;
-            padding: 14px;
-            margin-bottom: 14px;
+            padding: 16px;
+            margin-bottom: 16px;
             background-color: #2a2a2a;
             color: #fff;
             border: 1px solid #555;
-            border-radius: 8px;
+            border-radius: 10px;
             resize: vertical;
+            white-space: pre-wrap;
         }
 
-        .modal-buttons { display: flex; gap: 12px; justify-content: flex-end; margin-top: 15px; }
-        .modal-buttons button { font-size: 15pt; padding: 10px 20px; }
+        .modal-buttons { display: flex; gap: 12px; justify-content: flex-end; margin-top: auto; }
+        .modal-buttons button { font-size: 16pt; padding: 12px 24px; }
     </style>
 </head>
 <body>
@@ -285,8 +308,8 @@
 
         <!-- 卡片內容區 -->
         <main id="cardArea">
-            <div class="swipe-hint">💡 上下或左右滑動可切換下一張</div>
-            <div class="card-wrapper" id="cardWrapper">
+            <div class="card-box" id="cardWrapper">
+                <div class="swipe-hint">💡 上下或左右滑動可切換下一張</div>
                 <div class="tags-container" id="cardTags"></div>
                 <div class="quote-text" id="cardText">載入中...</div>
                 <div class="quote-meta">
@@ -296,8 +319,10 @@
 
                 <!-- 歷史留言註解區 -->
                 <div class="notes-section">
-                    <button class="notes-toggle" onclick="toggleNotes()">💬 留言註解 (<span id="noteCount">0</span>)</button>
-                    <button class="notes-toggle" style="margin-left: 15px;" onclick="openAddNoteModal()">➕ 寫心得</button>
+                    <div class="notes-toggle-bar">
+                        <button class="notes-toggle" onclick="toggleNotes()">💬 檢視心得歷史 (<span id="noteCount">0</span>)</button>
+                        <button class="notes-toggle" style="color: var(--accent-color); font-weight: bold;" onclick="openAddNoteModal()">✍️ 寫心得</button>
+                    </div>
                     <div class="notes-list" id="notesList"></div>
                 </div>
             </div>
@@ -315,7 +340,7 @@
     <div id="addModal" class="modal">
         <div class="modal-content">
             <h2>新增語錄 / 讀書筆記</h2>
-            <textarea id="newText" rows="6" placeholder="輸入勵志語或書摘內容..."></textarea>
+            <textarea id="newText" class="large-textarea" style="min-height:180px;" placeholder="輸入勵志語或書摘內容..."></textarea>
             <input type="text" id="newSource" placeholder="來源 (例如: 《原子習慣》p.45)">
             <input type="text" id="newTags" placeholder="標籤 (半角逗號隔開，如: 商業,習慣)">
             <div class="modal-buttons">
@@ -325,11 +350,11 @@
         </div>
     </div>
 
-    <!-- 撰寫心得 彈窗 (加大畫板) -->
+    <!-- 撰寫心得 彈窗 (超大畫板，占用一半以上版面) -->
     <div id="addNoteModal" class="modal">
         <div class="modal-content">
             <h2>寫下您的閱讀心得與體悟</h2>
-            <textarea id="newNoteText" rows="8" placeholder="在此輸入較長的文字心得、個人體悟或延伸思考..."></textarea>
+            <textarea id="newNoteText" class="large-textarea" placeholder="在此輸入您的心得體悟...&#10;支援換行與條列：&#10;1. 第一點感悟&#10;2. 第二點思考..."></textarea>
             <div class="modal-buttons">
                 <button onclick="saveNote()">發表心得</button>
                 <button onclick="closeModal('addNoteModal')">取消</button>
@@ -339,7 +364,7 @@
 
     <!-- 設定與備份 彈窗 -->
     <div id="settingsModal" class="modal">
-        <div class="modal-content">
+        <div class="modal-content" style="min-height:auto;">
             <h2>系統設定與備份</h2>
             
             <label style="display:block; margin: 10px 0;">字體大小微調：</label>
@@ -545,7 +570,7 @@
             const sortedNotes = [...notes].reverse();
             const html = sortedNotes.map(n => `
                 <div class="note-item">
-                    <div class="note-date">${n.timestamp}</div>
+                    <div class="note-date">📅 ${n.timestamp}</div>
                     <div>${n.content}</div>
                 </div>
             `).join('');
@@ -571,7 +596,7 @@
             renderNotes();
             document.getElementById('newNoteText').value = '';
             closeModal('addNoteModal');
-            showToast('💬 心得已發表');
+            showToast('✍️ 心得已發表');
         }
 
         function saveNewQuote() {
