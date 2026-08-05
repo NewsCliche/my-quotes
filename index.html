@@ -611,8 +611,8 @@
             const select = document.getElementById('categorySelect');
             const currentVal = select.value;
             const uniqueTags = getAllUniqueTags();
-            const oneYearAgo = new Date();
-            oneYearAgo.setFullYear(oneYearAgo.getFullYear() - 1);
+            const threeMonthsAgo = new Date();
+            threeMonthsAgo.setMonth(threeMonthsAgo.getMonth() - 3);
 
             const totalCount = quotes.filter(q => q.dislikes < 5 && !(q.dislikes >= 1 && new Date(q.date) > oneYearAgo)).length;
             const favCount = quotes.filter(q => q.dislikes < 5 && q.liked).length;
