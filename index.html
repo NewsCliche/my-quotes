@@ -154,7 +154,7 @@
             border: 1px solid #333;
             border-left: 4px solid var(--accent-color);
             border-radius: 16px;
-            padding: 20px;
+            padding: 18px;
             box-shadow: 0 8px 24px rgba(0,0,0,0.4);
             height: 100%;
             display: flex;
@@ -163,72 +163,79 @@
             transition: opacity 0.2s ease-out;
         }
 
-        .swipe-hint {
-            text-align: center;
-            font-size: 11pt;
-            color: var(--accent-color);
-            margin-bottom: 10px;
-            font-weight: bold;
-        }
-
         .card-top-bar {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            margin-bottom: 14px;
+            margin-bottom: 12px;
         }
 
-        .tags-container {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 8px;
-        }
-
-        .tag-badge {
-            font-size: 12pt;
-            background-color: #2a2a2a;
+        .swipe-hint {
+            font-size: 10.5pt;
             color: var(--accent-color);
-            padding: 4px 12px;
-            border-radius: 20px;
-            border: 1px solid #444;
+            font-weight: bold;
         }
 
+        .card-action-btns {
+            display: flex;
+            gap: 6px;
+            flex-shrink: 0;
+        }
+
+        /* 右上角精緻小按鈕 */
         .edit-quote-btn {
-            font-size: 11pt;
-            padding: 4px 10px;
+            font-size: 10pt;
+            padding: 3px 8px;
             background-color: #2a2a2a;
-            border: 1px solid #555;
+            border: 1px solid #444;
             border-radius: 6px;
             color: var(--accent-color);
             cursor: pointer;
         }
 
         .delete-quote-btn {
-            font-size: 11pt;
-            padding: 4px 10px;
+            font-size: 10pt;
+            padding: 3px 8px;
             background-color: #2a2a2a;
-            border: 1px solid #882222;
+            border: 1px solid #662222;
             border-radius: 6px;
-            color: #ff6b6b;
+            color: #ff8888;
             cursor: pointer;
-            margin-left: 4px;
         }
 
         .quote-text {
             font-size: var(--font-size);
             line-height: 1.55;
             font-weight: 500;
-            margin-bottom: 16px;
+            margin-bottom: 14px;
             letter-spacing: 0.5px;
             word-break: break-word;
         }
 
         .quote-meta {
-            font-size: 15pt;
+            font-size: 14pt;
             color: var(--sub-text);
             text-align: right;
             line-height: 1.5;
-            margin-bottom: 15px;
+            margin-bottom: 12px;
+        }
+
+        /* 標籤容器（擺放在語錄下方、心得上方） */
+        .tags-container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+            margin-top: 6px;
+            margin-bottom: 16px;
+        }
+
+        .tag-badge {
+            font-size: 11pt;
+            background-color: #262626;
+            color: var(--accent-color);
+            padding: 3px 10px;
+            border-radius: 16px;
+            border: 1px solid #3d3d3d;
         }
 
         /* 註解列表 */
@@ -445,21 +452,26 @@
 
         <main id="cardArea">
             <div class="card-box" id="cardWrapper">
-                <div class="swipe-hint" id="swipeHint">📊 載入中...</div>
-                
+                <!-- 頂部欄：左側進度提示，右側小小的編輯與刪除 -->
                 <div class="card-top-bar">
-                    <div class="tags-container" id="cardTags"></div>
-                    <div>
+                    <div class="swipe-hint" id="swipeHint">📊 載入中...</div>
+                    <div class="card-action-btns">
                         <button class="edit-quote-btn" onclick="openEditQuoteModal()">✏️ 編輯</button>
                         <button class="delete-quote-btn" onclick="deleteCurrentQuote()">🗑️ 刪除</button>
                     </div>
                 </div>
+
+                <!-- 金句主體 -->
                 <div class="quote-text" id="cardText">載入中...</div>
                 <div class="quote-meta">
                     <div id="cardSource"></div>
                     <div id="cardDate" style="font-size: 11pt; margin-top: 4px;"></div>
                 </div>
 
+                <!-- 標籤區（位在語錄下方、心得歷史上方） -->
+                <div class="tags-container" id="cardTags"></div>
+
+                <!-- 心得註解區 -->
                 <div class="notes-section">
                     <div class="notes-toggle-bar">
                         <button class="notes-toggle" onclick="toggleNotes()">💬 檢視心得歷史 (<span id="noteCount">0</span>)</button>
@@ -741,7 +753,7 @@
                 currentQuote = shuffledQueue[shuffleIndex];
                 
                 if (searchQuery !== "") {
-                    swipeHint.innerText = `🔍 搜尋「${searchQuery}」匹配 ${pool.length} 則 (洗牌模式：${shuffleIndex + 1}/${pool.length})`;
+                    swipeHint.innerText = `🔍 搜尋「${searchQuery}」匹配 ${pool.length} 則 (${shuffleIndex + 1}/${pool.length})`;
                 } else {
                     swipeHint.innerText = `🃏 洗牌不重複：第 ${shuffleIndex + 1} / ${pool.length} 則`;
                 }
@@ -922,7 +934,6 @@
             openModal('addModal');
         }
 
-        /* 刪除目前這則語錄卡片 */
         function deleteCurrentQuote() {
             if (!currentQuote) return;
             if (confirm("確定要永久刪除這則語錄卡片嗎？")) {
