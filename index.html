@@ -485,7 +485,8 @@
             <button onclick="exportJSON()" style="width:100%; margin-bottom:10px;">📥 匯出 JSON 完整備份檔</button>
             <button onclick="exportTXT()" style="width:100%; margin-bottom:10px;">📄 匯出 TXT 文字檔 (防亂碼版)</button>
             
-            <label style="display:block; margin: 10px 0;">匯入 JSON 備份檔：</label>
+            <label style="display:block; margin: 10px 0; font-weight: bold; color: var(--accent-color);">匯入 / 智慧合併 JSON 檔：</label>
+            <p style="font-size: 11pt; color: #aaa; margin-bottom: 8px;">系統會自動比對並保留您現有語錄的心得與按讚紀錄。</p>
             <input type="file" id="importFile" accept=".json" onchange="importJSON(event)">
 
             <div class="modal-buttons" style="margin-top: 20px;">
@@ -906,7 +907,6 @@
             document.documentElement.style.setProperty('--font-size', size);
         }
 
-        // 修正編碼：加入 UTF-8 BOM (\uFEFF) 防止 Windows/Excel 匯出亂碼
         function exportJSON() {
             const jsonString = JSON.stringify(quotes, null, 2);
             const blob = new Blob(["\uFEFF" + jsonString], { type: "application/json;charset=utf-8" });
@@ -932,7 +932,6 @@
                 txtContent += `\n-----------------------------------\n\n`;
             });
 
-            // 加入 \uFEFF 強制 Windows 識別為 UTF-8 編碼，解決亂碼問題
             const blob = new Blob(["\uFEFF" + txtContent], { type: "text/plain;charset=utf-8" });
             const url = URL.createObjectURL(blob);
 
@@ -943,20 +942,53 @@
             URL.revokeObjectURL(url);
         }
 
+        // --- 智慧合併匯入邏輯 (保留舊心得與讚數) ---
         function importJSON(event) {
             const reader = new FileReader();
             reader.onload = function(e) {
                 try {
-                    // 自動移除可能的 BOM 標記後再解析
                     let text = e.target.result;
                     if (text.startsWith('\uFEFF')) {
                         text = text.slice(1);
                     }
                     const imported = JSON.parse(text);
                     if (Array.isArray(imported)) {
-                        quotes = imported;
+                        // 建立以「內文」為基準的快速查找 Map
+                        const existingMap = new Map();
+                        quotes.forEach(q => {
+                            if (q.text) existingMap.set(q.text.trim(), q);
+                        });
+
+                        let mergedCount = 0;
+                        let newAddedCount = 0;
+
+                        imported.forEach(impQ => {
+                            if (!impQ.text) return;
+                            const cleanText = impQ.text.trim();
+
+                            if (existingMap.has(cleanText)) {
+                                // 智慧合併：如果句子已存在，整合標籤並保留舊心得與按讚狀態
+                                const oldQ = existingMap.get(cleanText);
+                                
+                                // 合併標籤
+                                const mergedTags = new Set([...(oldQ.tags || []), ...(impQ.tags || [])]);
+                                oldQ.tags = Array.from(mergedTags);
+                                
+                                // 保留來源 (如果舊的沒寫，採納新的)
+                                if (!oldQ.source && impQ.source) oldQ.source = impQ.source;
+                                
+                                mergedCount++;
+                            } else {
+                                // 新語錄：直接補進去
+                                if (!impQ.id) impQ.id = Date.now() + Math.random();
+                                if (!impQ.notes) impQ.notes = [];
+                                quotes.push(impQ);
+                                newAddedCount++;
+                            }
+                        });
+
                         saveData();
-                        showToast('✅ 備份資料匯入成功！');
+                        showToast(`✅ 成功合併！(新增 ${newAddedCount} 則，整合 ${mergedCount} 則，心得完好保留)`);
                         renderCard();
                         closeModal('settingsModal');
                     } else {
