@@ -415,7 +415,6 @@
         <!-- 卡片內容區 -->
         <main id="cardArea">
             <div class="card-box" id="cardWrapper">
-                <!-- 頂部顯示卡片總數與當前編號 -->
                 <div class="swipe-hint" id="swipeHint">📊 載入中...</div>
                 
                 <div class="card-top-bar">
@@ -482,6 +481,12 @@
         <div class="modal-content" style="min-height:auto;">
             <h2>系統設定與備份</h2>
             
+            <label style="display:block; margin: 10px 0; font-weight: bold; color: var(--accent-color);">抽卡模式選擇：</label>
+            <select id="drawModeSelect" onchange="changeDrawMode(this.value)" style="width:100%; margin-bottom: 15px;">
+                <option value="RANDOM">🎲 隨機模式 (預設，可能重複)</option>
+                <option value="SHUFFLE">🃏 洗牌模式 (不重複抽，讀完才洗牌)</option>
+            </select>
+
             <label style="display:block; margin: 10px 0;">字體大小微調：</label>
             <select id="fontSizeSelect" onchange="changeFontSize(this.value)" style="width:100%;">
                 <option value="20pt">中 (20pt)</option>
@@ -522,6 +527,11 @@
         let isEditingQuote = false;
         let selectedChips = new Set();
         let searchQuery = "";
+        
+        // 洗牌模式相關資料結構
+        let drawMode = "RANDOM"; // "RANDOM" 或 "SHUFFLE"
+        let shuffledQueue = []; // 洗牌隊列
+        let shuffleIndex = 0;   // 目前播到洗牌隊列的第幾張
 
         window.onload = function() {
             const saved = localStorage.getItem('my_quotes_data');
@@ -531,6 +541,13 @@
                 quotes = defaultQuotes;
                 saveData();
             }
+
+            const savedMode = localStorage.getItem('my_draw_mode');
+            if (savedMode) {
+                drawMode = savedMode;
+                document.getElementById('drawModeSelect').value = drawMode;
+            }
+
             updateCategoryDropdown();
             renderCard();
             setupTouchEvents();
@@ -539,6 +556,14 @@
         function saveData() {
             localStorage.setItem('my_quotes_data', JSON.stringify(quotes));
             updateCategoryDropdown();
+        }
+
+        function changeDrawMode(mode) {
+            drawMode = mode;
+            localStorage.setItem('my_draw_mode', mode);
+            resetShuffleQueue(); // 切換模式時重置洗牌隊列
+            showToast(mode === 'SHUFFLE' ? '🃏 已切換為：洗牌模式 (不重複)' : '🎲 已切換為：隨機模式');
+            renderCard();
         }
 
         function showToast(msg) {
@@ -591,6 +616,7 @@
 
         function onSearchInput() {
             searchQuery = document.getElementById('searchInput').value.trim().toLowerCase();
+            resetShuffleQueue();
             renderCard();
         }
 
@@ -598,6 +624,7 @@
             document.getElementById('searchInput').value = "";
             searchQuery = "";
             document.getElementById('searchBarContainer').style.display = 'none';
+            resetShuffleQueue();
             renderCard();
         }
 
@@ -634,7 +661,22 @@
             });
         }
 
-        /* 渲染卡片 (更新總卡片數與編號) */
+        // 洗牌演算法 (Fisher-Yates Shuffle)
+        function shuffleArray(array) {
+            const arr = [...array];
+            for (let i = arr.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [arr[i], arr[j]] = [arr[j], arr[i]];
+            }
+            return arr;
+        }
+
+        function resetShuffleQueue() {
+            shuffledQueue = [];
+            shuffleIndex = 0;
+        }
+
+        /* 渲染卡片 (包含隨機與洗牌模式) */
         function renderCard() {
             const pool = getFilteredQuotes();
             const likeBtn = document.getElementById('likeBtn');
@@ -649,19 +691,36 @@
                 document.getElementById('notesList').innerHTML = '';
                 currentQuote = null;
                 likeBtn.classList.remove('is-liked');
-                
                 swipeHint.innerText = '📊 當前共 0 則卡片';
                 return;
             }
 
-            const randomIndex = Math.floor(Math.random() * pool.length);
-            currentQuote = pool[randomIndex];
+            if (drawMode === "SHUFFLE") {
+                // 如果隊列為空，或是隊列長度與目前池子不符（可能刪改過卡片），重新洗牌
+                if (shuffledQueue.length === 0 || shuffledQueue.length !== pool.length || shuffleIndex >= shuffledQueue.length) {
+                    shuffledQueue = shuffleArray(pool);
+                    shuffleIndex = 0;
+                }
 
-            // 顯示卡片總數與當前抽取到的序號
-            if (searchQuery !== "") {
-                swipeHint.innerText = `🔍 搜尋「${searchQuery}」匹配到 ${pool.length} 則卡片 (第 ${randomIndex + 1} 則)`;
+                currentQuote = shuffledQueue[shuffleIndex];
+                
+                if (searchQuery !== "") {
+                    swipeHint.innerText = `🔍 搜尋「${searchQuery}」匹配 ${pool.length} 則 (洗牌模式：${shuffleIndex + 1}/${pool.length})`;
+                } else {
+                    swipeHint.innerText = `🃏 洗牌不重複：第 ${shuffleIndex + 1} / ${pool.length} 則`;
+                }
+
+                shuffleIndex++; // 為下一次「下一張」預備指標
             } else {
-                swipeHint.innerText = `📊 共有 ${pool.length} 則卡片 (目前：第 ${randomIndex + 1} 則)`;
+                // 傳統隨機模式
+                const randomIndex = Math.floor(Math.random() * pool.length);
+                currentQuote = pool[randomIndex];
+
+                if (searchQuery !== "") {
+                    swipeHint.innerText = `🔍 搜尋「${searchQuery}」匹配 ${pool.length} 則 (第 ${randomIndex + 1} 則)`;
+                } else {
+                    swipeHint.innerText = `🎲 隨機模式：共 ${pool.length} 則 (第 ${randomIndex + 1} 則)`;
+                }
             }
 
             document.getElementById('cardText').innerText = currentQuote.text;
@@ -682,7 +741,10 @@
             renderNotes();
         }
 
-        function filterCategory() { renderCard(); }
+        function filterCategory() {
+            resetShuffleQueue(); // 切換目錄時重新洗牌
+            renderCard();
+        }
 
         function handleAction(type) {
             if (!currentQuote) return;
@@ -704,6 +766,7 @@
             } else if (type === 'DISLIKE') {
                 currentQuote.dislikes += 1;
                 saveData();
+                resetShuffleQueue();
                 if (currentQuote.dislikes >= 5) {
                     showToast('❌ 已累積不喜歡 5 次，正式刪除');
                 } else {
@@ -864,6 +927,7 @@
             }
 
             saveData();
+            resetShuffleQueue();
             closeModal('addModal');
             renderCard();
         }
@@ -992,6 +1056,7 @@
                         });
 
                         saveData();
+                        resetShuffleQueue();
                         showToast(`✅ 成功合併！(新增 ${newAddedCount} 則，整合 ${mergedCount} 則)`);
                         renderCard();
                         closeModal('settingsModal');
