@@ -197,7 +197,7 @@
             margin-bottom: 15px;
         }
 
-        /* 註解列表 */
+        /* 註解列表 - 排版精修 */
         .notes-section {
             margin-top: auto;
             border-top: 1px dashed #444;
@@ -227,24 +227,23 @@
             overflow-y: auto;
         }
 
+        /* 單條心得卡片 */
         .note-item {
             background-color: #262626;
             padding: 12px;
             border-radius: 8px;
             margin-bottom: 10px;
-            font-size: 14pt;
-            line-height: 1.6;
             border-left: 3px solid var(--accent-color);
-            white-space: pre-wrap;
-            word-break: break-word;
-            position: relative;
         }
 
+        /* 心得標頭欄（日期 + 操作按鈕同橫行） */
         .note-header {
             display: flex;
             justify-content: space-between;
             align-items: center;
             margin-bottom: 6px;
+            padding-bottom: 4px;
+            border-bottom: 1px solid #333;
         }
 
         .note-date {
@@ -255,11 +254,21 @@
 
         .note-actions button {
             font-size: 11pt;
-            padding: 2px 8px;
+            padding: 3px 8px;
             background-color: #333;
             border: 1px solid #555;
             border-radius: 4px;
-            margin-left: 4px;
+            margin-left: 6px;
+            color: #fff;
+        }
+
+        /* 心得內文區塊（單獨套用保留換行） */
+        .note-body {
+            font-size: 14pt;
+            line-height: 1.6;
+            color: #eee;
+            white-space: pre-wrap;
+            word-break: break-word;
         }
 
         /* 底部操作欄 */
@@ -743,6 +752,7 @@
             list.style.display = list.style.display === 'block' ? 'none' : 'block';
         }
 
+        /* 渲染心得列表（精修結構，避免多餘空行） */
         function renderNotes() {
             if (!currentQuote) return;
             const notes = currentQuote.notes || [];
@@ -757,7 +767,7 @@
                             <button onclick="deleteNote(${idx})">🗑️ 刪除</button>
                         </span>
                     </div>
-                    <div>${n.content}</div>
+                    <div class="note-body">${n.content}</div>
                 </div>
             `).reverse().join('');
             
@@ -942,7 +952,6 @@
             URL.revokeObjectURL(url);
         }
 
-        // --- 智慧合併匯入邏輯 (保留舊心得與讚數) ---
         function importJSON(event) {
             const reader = new FileReader();
             reader.onload = function(e) {
@@ -953,7 +962,6 @@
                     }
                     const imported = JSON.parse(text);
                     if (Array.isArray(imported)) {
-                        // 建立以「內文」為基準的快速查找 Map
                         const existingMap = new Map();
                         quotes.forEach(q => {
                             if (q.text) existingMap.set(q.text.trim(), q);
@@ -967,19 +975,12 @@
                             const cleanText = impQ.text.trim();
 
                             if (existingMap.has(cleanText)) {
-                                // 智慧合併：如果句子已存在，整合標籤並保留舊心得與按讚狀態
                                 const oldQ = existingMap.get(cleanText);
-                                
-                                // 合併標籤
                                 const mergedTags = new Set([...(oldQ.tags || []), ...(impQ.tags || [])]);
                                 oldQ.tags = Array.from(mergedTags);
-                                
-                                // 保留來源 (如果舊的沒寫，採納新的)
                                 if (!oldQ.source && impQ.source) oldQ.source = impQ.source;
-                                
                                 mergedCount++;
                             } else {
-                                // 新語錄：直接補進去
                                 if (!impQ.id) impQ.id = Date.now() + Math.random();
                                 if (!impQ.notes) impQ.notes = [];
                                 quotes.push(impQ);
@@ -988,7 +989,7 @@
                         });
 
                         saveData();
-                        showToast(`✅ 成功合併！(新增 ${newAddedCount} 則，整合 ${mergedCount} 則，心得完好保留)`);
+                        showToast(`✅ 成功合併！(新增 ${newAddedCount} 則，整合 ${mergedCount} 則)`);
                         renderCard();
                         closeModal('settingsModal');
                     } else {
