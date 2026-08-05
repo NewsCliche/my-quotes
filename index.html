@@ -43,7 +43,7 @@
             position: relative;
         }
 
-        /* 頂部控制欄（關鍵修復：防止按鈕被切掉） */
+        /* 頂部控制欄 */
         header {
             padding: 10px 10px;
             display: flex;
@@ -56,10 +56,9 @@
             gap: 6px;
         }
 
-        /* 下拉選單彈性縮放，超出自動省略號 */
         #categorySelect {
             flex: 1;
-            min-width: 0; /* 允許文字太長時自動縮小 */
+            min-width: 0;
             text-overflow: ellipsis;
             white-space: nowrap;
             overflow: hidden;
@@ -72,11 +71,10 @@
             cursor: pointer;
         }
 
-        /* 右側按鈕群保護 (絕對不被被推擠或壓縮) */
         .header-btn-group {
             display: flex;
             gap: 4px;
-            flex-shrink: 0; /* 禁止壓縮 */
+            flex-shrink: 0;
         }
 
         .header-btn-group button {
@@ -412,7 +410,6 @@
     <div class="app-container">
         <div id="toast">提示訊息</div>
 
-        <!-- 頂部控制欄（防擠壓排版） -->
         <header>
             <select id="categorySelect" onchange="filterCategory()">
                 <option value="ALL">🎲 隨機全區</option>
@@ -427,7 +424,6 @@
             </div>
         </header>
 
-        <!-- 搜尋列浮層 -->
         <div class="search-bar-container" id="searchBarContainer">
             <div class="search-bar-inner">
                 <input type="text" id="searchInput" class="search-input" placeholder="輸入關鍵字 (內文/來源/心得)..." oninput="onSearchInput()">
@@ -435,7 +431,6 @@
             </div>
         </div>
 
-        <!-- 卡片內容區 -->
         <main id="cardArea">
             <div class="card-box" id="cardWrapper">
                 <div class="swipe-hint" id="swipeHint">📊 載入中...</div>
@@ -450,7 +445,6 @@
                     <div id="cardDate" style="font-size: 11pt; margin-top: 4px;"></div>
                 </div>
 
-                <!-- 歷史留言註解區 -->
                 <div class="notes-section">
                     <div class="notes-toggle-bar">
                         <button class="notes-toggle" onclick="toggleNotes()">💬 檢視心得歷史 (<span id="noteCount">0</span>)</button>
@@ -461,7 +455,6 @@
             </div>
         </main>
 
-        <!-- 底部操作按鈕 -->
         <footer>
             <button class="btn-action btn-like" id="likeBtn" onclick="handleAction('LIKE')">❤️ 讚</button>
             <button class="btn-action btn-next" onclick="handleAction('NEXT')">➡️ 下一張</button>
@@ -469,7 +462,6 @@
         </footer>
     </div>
 
-    <!-- 新增 / 編輯語錄 彈窗 -->
     <div id="addModal" class="modal">
         <div class="modal-content">
             <h2 id="quoteModalTitle">新增語錄 / 讀書筆記</h2>
@@ -487,7 +479,6 @@
         </div>
     </div>
 
-    <!-- 撰寫 / 編輯心得 彈窗 -->
     <div id="addNoteModal" class="modal">
         <div class="modal-content">
             <h2 id="noteModalTitle">寫下您的閱讀心得與體悟</h2>
@@ -499,7 +490,6 @@
         </div>
     </div>
 
-    <!-- 設定與備份 彈窗 -->
     <div id="settingsModal" class="modal">
         <div class="modal-content" style="min-height:auto;">
             <h2>系統設定與備份</h2>
@@ -607,14 +597,17 @@
             return Array.from(tagsSet);
         }
 
+        /* 自動更新目錄選單（改為 3 個月判定） */
         function updateCategoryDropdown() {
             const select = document.getElementById('categorySelect');
             const currentVal = select.value;
             const uniqueTags = getAllUniqueTags();
+            
+            // 計算 3 個月前的日期
             const threeMonthsAgo = new Date();
             threeMonthsAgo.setMonth(threeMonthsAgo.getMonth() - 3);
 
-            const totalCount = quotes.filter(q => q.dislikes < 5 && !(q.dislikes >= 1 && new Date(q.date) > oneYearAgo)).length;
+            const totalCount = quotes.filter(q => q.dislikes < 5 && !(q.dislikes >= 1 && new Date(q.date) > threeMonthsAgo)).length;
             const favCount = quotes.filter(q => q.dislikes < 5 && q.liked).length;
             const sleepCount = quotes.filter(q => q.dislikes >= 1 && q.dislikes < 5).length;
 
@@ -627,7 +620,7 @@
             uniqueTags.forEach(t => {
                 const tagCount = quotes.filter(q => {
                     if (q.dislikes >= 5) return false;
-                    if (q.dislikes >= 1 && new Date(q.date) > oneYearAgo) return false;
+                    if (q.dislikes >= 1 && new Date(q.date) > threeMonthsAgo) return false;
                     return q.tags && q.tags.includes(t);
                 }).length;
                 html += `<option value="${t}">🏷️ ${t} (${tagCount})</option>`;
@@ -661,10 +654,13 @@
             renderCard();
         }
 
+        /* 過濾選單邏輯（改為 3 個月判定） */
         function getFilteredQuotes() {
             const cat = document.getElementById('categorySelect').value;
-            const oneYearAgo = new Date();
-            oneYearAgo.setFullYear(oneYearAgo.getFullYear() - 1);
+            
+            // 計算 3 個月前的日期
+            const threeMonthsAgo = new Date();
+            threeMonthsAgo.setMonth(threeMonthsAgo.getMonth() - 3);
 
             return quotes.filter(q => {
                 if (q.dislikes >= 5) return false;
@@ -683,9 +679,10 @@
                     return q.dislikes >= 1 && q.dislikes < 5;
                 }
 
+                // 沉睡庫中的卡片，若在 3 個月內不顯示於一般抽選；滿 3 個月後自動釋放出庫
                 if (q.dislikes >= 1 && q.dislikes < 5) {
                     const quoteDate = new Date(q.date);
-                    if (quoteDate > oneYearAgo) return false;
+                    if (quoteDate > threeMonthsAgo) return false;
                 }
 
                 if (cat === 'ALL') return true;
