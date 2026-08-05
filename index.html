@@ -200,6 +200,18 @@
             border: 1px solid #555;
             border-radius: 6px;
             color: var(--accent-color);
+            cursor: pointer;
+        }
+
+        .delete-quote-btn {
+            font-size: 11pt;
+            padding: 4px 10px;
+            background-color: #2a2a2a;
+            border: 1px solid #882222;
+            border-radius: 6px;
+            color: #ff6b6b;
+            cursor: pointer;
+            margin-left: 4px;
         }
 
         .quote-text {
@@ -437,7 +449,10 @@
                 
                 <div class="card-top-bar">
                     <div class="tags-container" id="cardTags"></div>
-                    <button class="edit-quote-btn" onclick="openEditQuoteModal()">✏️ 編輯語錄</button>
+                    <div>
+                        <button class="edit-quote-btn" onclick="openEditQuoteModal()">✏️ 編輯</button>
+                        <button class="delete-quote-btn" onclick="deleteCurrentQuote()">🗑️ 刪除</button>
+                    </div>
                 </div>
                 <div class="quote-text" id="cardText">載入中...</div>
                 <div class="quote-meta">
@@ -597,13 +612,11 @@
             return Array.from(tagsSet);
         }
 
-        /* 自動更新目錄選單（改為 3 個月判定） */
         function updateCategoryDropdown() {
             const select = document.getElementById('categorySelect');
             const currentVal = select.value;
             const uniqueTags = getAllUniqueTags();
             
-            // 計算 3 個月前的日期
             const threeMonthsAgo = new Date();
             threeMonthsAgo.setMonth(threeMonthsAgo.getMonth() - 3);
 
@@ -654,11 +667,8 @@
             renderCard();
         }
 
-        /* 過濾選單邏輯（改為 3 個月判定） */
         function getFilteredQuotes() {
             const cat = document.getElementById('categorySelect').value;
-            
-            // 計算 3 個月前的日期
             const threeMonthsAgo = new Date();
             threeMonthsAgo.setMonth(threeMonthsAgo.getMonth() - 3);
 
@@ -679,7 +689,6 @@
                     return q.dislikes >= 1 && q.dislikes < 5;
                 }
 
-                // 沉睡庫中的卡片，若在 3 個月內不顯示於一般抽選；滿 3 個月後自動釋放出庫
                 if (q.dislikes >= 1 && q.dislikes < 5) {
                     const quoteDate = new Date(q.date);
                     if (quoteDate > threeMonthsAgo) return false;
@@ -911,6 +920,21 @@
             document.getElementById('newTags').value = "";
             renderTagChips();
             openModal('addModal');
+        }
+
+        /* 刪除目前這則語錄卡片 */
+        function deleteCurrentQuote() {
+            if (!currentQuote) return;
+            if (confirm("確定要永久刪除這則語錄卡片嗎？")) {
+                const idx = quotes.findIndex(q => q.id === currentQuote.id);
+                if (idx !== -1) {
+                    quotes.splice(idx, 1);
+                    saveData();
+                    resetShuffleQueue();
+                    showToast("🗑️ 已成功刪除卡片");
+                    renderCard();
+                }
+            }
         }
 
         function saveQuote() {
