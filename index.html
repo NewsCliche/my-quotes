@@ -43,9 +43,9 @@
             position: relative;
         }
 
-        /* 頂部控制欄 */
+        /* 頂部控制欄（關鍵修復：防止按鈕被切掉） */
         header {
-            padding: 10px 14px;
+            padding: 10px 10px;
             display: flex;
             justify-content: space-between;
             align-items: center;
@@ -53,7 +53,40 @@
             border-bottom: 1px solid #2d2d2d;
             flex-shrink: 0;
             z-index: 10;
-            gap: 8px;
+            gap: 6px;
+        }
+
+        /* 下拉選單彈性縮放，超出自動省略號 */
+        #categorySelect {
+            flex: 1;
+            min-width: 0; /* 允許文字太長時自動縮小 */
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            overflow: hidden;
+            font-size: 13pt;
+            padding: 8px 6px;
+            border-radius: 8px;
+            border: 1px solid #444;
+            background-color: #2a2a2a;
+            color: #fff;
+            cursor: pointer;
+        }
+
+        /* 右側按鈕群保護 (絕對不被被推擠或壓縮) */
+        .header-btn-group {
+            display: flex;
+            gap: 4px;
+            flex-shrink: 0; /* 禁止壓縮 */
+        }
+
+        .header-btn-group button {
+            font-size: 13pt;
+            padding: 8px 8px;
+            border-radius: 8px;
+            border: 1px solid #444;
+            background-color: #2a2a2a;
+            color: #fff;
+            cursor: pointer;
         }
 
         /* 搜尋列浮層 */
@@ -82,16 +115,6 @@
             border: 1px solid var(--accent-color);
             background-color: #2a2a2a;
             color: #fff;
-        }
-
-        select, button {
-            font-size: 14pt;
-            padding: 8px 10px;
-            border-radius: 8px;
-            border: 1px solid #444;
-            background-color: #2a2a2a;
-            color: #fff;
-            cursor: pointer;
         }
 
         /* 輕量提示 (Toast) */
@@ -389,14 +412,14 @@
     <div class="app-container">
         <div id="toast">提示訊息</div>
 
-        <!-- 頂部控制欄 -->
+        <!-- 頂部控制欄（防擠壓排版） -->
         <header>
-            <select id="categorySelect" style="flex:1;" onchange="filterCategory()">
+            <select id="categorySelect" onchange="filterCategory()">
                 <option value="ALL">🎲 隨機全區</option>
                 <option value="FAV">❤️ 按過讚 (喜愛庫)</option>
                 <option value="SLEEP">🌙 沉睡庫 (隱藏中)</option>
             </select>
-            <div style="display:flex; gap:6px;">
+            <div class="header-btn-group">
                 <button onclick="toggleSearchBar()" title="搜尋">🔍</button>
                 <button onclick="toggleFullScreen()" title="全螢幕切換">⛶</button>
                 <button onclick="openAddQuoteModal()">➕</button>
@@ -482,13 +505,13 @@
             <h2>系統設定與備份</h2>
             
             <label style="display:block; margin: 10px 0; font-weight: bold; color: var(--accent-color);">抽卡模式選擇：</label>
-            <select id="drawModeSelect" onchange="changeDrawMode(this.value)" style="width:100%; margin-bottom: 15px;">
+            <select id="drawModeSelect" onchange="changeDrawMode(this.value)" style="width:100%; margin-bottom: 15px; font-size:14pt; padding:8px;">
                 <option value="RANDOM">🎲 隨機模式 (預設，可能重複)</option>
                 <option value="SHUFFLE">🃏 洗牌模式 (不重複抽，讀完才洗牌)</option>
             </select>
 
             <label style="display:block; margin: 10px 0;">字體大小微調：</label>
-            <select id="fontSizeSelect" onchange="changeFontSize(this.value)" style="width:100%;">
+            <select id="fontSizeSelect" onchange="changeFontSize(this.value)" style="width:100%; font-size:14pt; padding:8px;">
                 <option value="20pt">中 (20pt)</option>
                 <option value="26pt" selected>大 (26pt - 推薦老花)</option>
                 <option value="32pt">特大 (32pt)</option>
@@ -496,8 +519,8 @@
 
             <hr style="margin: 20px 0; border-color: #444;">
             <h3 style="color:var(--accent-color); margin-bottom:10px;">資料安全備份</h3>
-            <button onclick="exportJSON()" style="width:100%; margin-bottom:10px;">📥 匯出 JSON 完整備份檔</button>
-            <button onclick="exportTXT()" style="width:100%; margin-bottom:10px;">📄 匯出 TXT 文字檔 (防亂碼版)</button>
+            <button onclick="exportJSON()" style="width:100%; margin-bottom:10px; font-size:14pt; padding:10px;">📥 匯出 JSON 完整備份檔</button>
+            <button onclick="exportTXT()" style="width:100%; margin-bottom:10px; font-size:14pt; padding:10px;">📄 匯出 TXT 文字檔 (防亂碼版)</button>
             
             <label style="display:block; margin: 10px 0; font-weight: bold; color: var(--accent-color);">匯入 / 智慧合併 JSON 檔：</label>
             <p style="font-size: 11pt; color: #aaa; margin-bottom: 8px;">系統會自動比對並保留您現有語錄的心得與按讚紀錄。</p>
@@ -528,10 +551,9 @@
         let selectedChips = new Set();
         let searchQuery = "";
         
-        // 洗牌模式相關資料結構
-        let drawMode = "RANDOM"; // "RANDOM" 或 "SHUFFLE"
-        let shuffledQueue = []; // 洗牌隊列
-        let shuffleIndex = 0;   // 目前播到洗牌隊列的第幾張
+        let drawMode = "RANDOM";
+        let shuffledQueue = [];
+        let shuffleIndex = 0;
 
         window.onload = function() {
             const saved = localStorage.getItem('my_quotes_data');
@@ -561,7 +583,7 @@
         function changeDrawMode(mode) {
             drawMode = mode;
             localStorage.setItem('my_draw_mode', mode);
-            resetShuffleQueue(); // 切換模式時重置洗牌隊列
+            resetShuffleQueue();
             showToast(mode === 'SHUFFLE' ? '🃏 已切換為：洗牌模式 (不重複)' : '🎲 已切換為：隨機模式');
             renderCard();
         }
@@ -589,15 +611,26 @@
             const select = document.getElementById('categorySelect');
             const currentVal = select.value;
             const uniqueTags = getAllUniqueTags();
+            const oneYearAgo = new Date();
+            oneYearAgo.setFullYear(oneYearAgo.getFullYear() - 1);
+
+            const totalCount = quotes.filter(q => q.dislikes < 5 && !(q.dislikes >= 1 && new Date(q.date) > oneYearAgo)).length;
+            const favCount = quotes.filter(q => q.dislikes < 5 && q.liked).length;
+            const sleepCount = quotes.filter(q => q.dislikes >= 1 && q.dislikes < 5).length;
 
             let html = `
-                <option value="ALL">🎲 隨機全區</option>
-                <option value="FAV">❤️ 按過讚 (喜愛庫)</option>
-                <option value="SLEEP">🌙 沉睡庫 (隱藏中)</option>
+                <option value="ALL">🎲 隨機全區 (${totalCount})</option>
+                <option value="FAV">❤️ 按過讚 (喜愛庫) (${favCount})</option>
+                <option value="SLEEP">🌙 沉睡庫 (隱藏中) (${sleepCount})</option>
             `;
 
             uniqueTags.forEach(t => {
-                html += `<option value="${t}">🏷️ ${t}</option>`;
+                const tagCount = quotes.filter(q => {
+                    if (q.dislikes >= 5) return false;
+                    if (q.dislikes >= 1 && new Date(q.date) > oneYearAgo) return false;
+                    return q.tags && q.tags.includes(t);
+                }).length;
+                html += `<option value="${t}">🏷️ ${t} (${tagCount})</option>`;
             });
 
             select.innerHTML = html;
@@ -661,7 +694,6 @@
             });
         }
 
-        // 洗牌演算法 (Fisher-Yates Shuffle)
         function shuffleArray(array) {
             const arr = [...array];
             for (let i = arr.length - 1; i > 0; i--) {
@@ -676,7 +708,6 @@
             shuffleIndex = 0;
         }
 
-        /* 渲染卡片 (包含隨機與洗牌模式) */
         function renderCard() {
             const pool = getFilteredQuotes();
             const likeBtn = document.getElementById('likeBtn');
@@ -696,7 +727,6 @@
             }
 
             if (drawMode === "SHUFFLE") {
-                // 如果隊列為空，或是隊列長度與目前池子不符（可能刪改過卡片），重新洗牌
                 if (shuffledQueue.length === 0 || shuffledQueue.length !== pool.length || shuffleIndex >= shuffledQueue.length) {
                     shuffledQueue = shuffleArray(pool);
                     shuffleIndex = 0;
@@ -710,9 +740,8 @@
                     swipeHint.innerText = `🃏 洗牌不重複：第 ${shuffleIndex + 1} / ${pool.length} 則`;
                 }
 
-                shuffleIndex++; // 為下一次「下一張」預備指標
+                shuffleIndex++;
             } else {
-                // 傳統隨機模式
                 const randomIndex = Math.floor(Math.random() * pool.length);
                 currentQuote = pool[randomIndex];
 
@@ -742,7 +771,7 @@
         }
 
         function filterCategory() {
-            resetShuffleQueue(); // 切換目錄時重新洗牌
+            resetShuffleQueue();
             renderCard();
         }
 
