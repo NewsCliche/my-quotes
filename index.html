@@ -87,6 +87,18 @@
             cursor: pointer;
         }
 
+        .btn-speaking {
+            background-color: #c62828 !important;
+            border-color: #ff6b6b !important;
+            animation: pulse 1.5s infinite;
+        }
+
+        @keyframes pulse {
+            0% { opacity: 1; }
+            50% { opacity: 0.6; }
+            100% { opacity: 1; }
+        }
+
         /* 搜尋列浮層 */
         .search-bar-container {
             display: none;
@@ -154,7 +166,7 @@
             border: 1px solid #333;
             border-left: 4px solid var(--accent-color);
             border-radius: 16px;
-            padding: 18px;
+            padding: 20px;
             box-shadow: 0 8px 24px rgba(0,0,0,0.4);
             height: 100%;
             display: flex;
@@ -163,79 +175,80 @@
             transition: opacity 0.2s ease-out;
         }
 
-        .card-top-bar {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 12px;
-        }
-
         .swipe-hint {
-            font-size: 10.5pt;
+            text-align: center;
+            font-size: 11pt;
             color: var(--accent-color);
+            margin-bottom: 10px;
             font-weight: bold;
         }
 
-        .card-action-btns {
+        .card-top-bar {
             display: flex;
-            gap: 6px;
-            flex-shrink: 0;
+            justify-content: flex-end;
+            align-items: center;
+            margin-bottom: 8px;
         }
 
-        /* 右上角精緻小按鈕 */
         .edit-quote-btn {
             font-size: 10pt;
-            padding: 3px 8px;
+            padding: 2px 6px;
             background-color: #2a2a2a;
-            border: 1px solid #444;
-            border-radius: 6px;
+            border: 1px solid #555;
+            border-radius: 4px;
             color: var(--accent-color);
             cursor: pointer;
         }
 
         .delete-quote-btn {
             font-size: 10pt;
-            padding: 3px 8px;
+            padding: 2px 6px;
             background-color: #2a2a2a;
-            border: 1px solid #662222;
-            border-radius: 6px;
-            color: #ff8888;
+            border: 1px solid #882222;
+            border-radius: 4px;
+            color: #ff6b6b;
             cursor: pointer;
+            margin-left: 4px;
         }
 
         .quote-text {
             font-size: var(--font-size);
             line-height: 1.55;
             font-weight: 500;
-            margin-bottom: 14px;
+            margin-bottom: 16px;
             letter-spacing: 0.5px;
             word-break: break-word;
         }
 
         .quote-meta {
-            font-size: 14pt;
+            font-size: 15pt;
             color: var(--sub-text);
             text-align: right;
             line-height: 1.5;
-            margin-bottom: 12px;
+            margin-bottom: 15px;
         }
 
-        /* 標籤容器（擺放在語錄下方、心得上方） */
+        /* 單行滑動標籤區塊 */
         .tags-container {
             display: flex;
-            flex-wrap: wrap;
-            gap: 6px;
-            margin-top: 6px;
-            margin-bottom: 16px;
+            flex-wrap: nowrap;
+            overflow-x: auto;
+            gap: 8px;
+            margin-bottom: 14px;
+            padding-bottom: 4px;
+            scrollbar-width: none;
         }
+        .tags-container::-webkit-scrollbar { display: none; }
 
         .tag-badge {
+            flex-shrink: 0;
             font-size: 11pt;
-            background-color: #262626;
+            background-color: #2a2a2a;
             color: var(--accent-color);
             padding: 3px 10px;
-            border-radius: 16px;
-            border: 1px solid #3d3d3d;
+            border-radius: 20px;
+            border: 1px solid #444;
+            white-space: nowrap;
         }
 
         /* 註解列表 */
@@ -436,6 +449,7 @@
                 <option value="SLEEP">🌙 沉睡庫 (隱藏中)</option>
             </select>
             <div class="header-btn-group">
+                <button id="ttsBtn" onclick="toggleSpeech()" title="語音連續朗讀">🔊</button>
                 <button onclick="toggleSearchBar()" title="搜尋">🔍</button>
                 <button onclick="toggleFullScreen()" title="全螢幕切換">⛶</button>
                 <button onclick="openAddQuoteModal()">➕</button>
@@ -452,26 +466,24 @@
 
         <main id="cardArea">
             <div class="card-box" id="cardWrapper">
-                <!-- 頂部欄：左側進度提示，右側小小的編輯與刪除 -->
+                <div class="swipe-hint" id="swipeHint">📊 載入中...</div>
+                
                 <div class="card-top-bar">
-                    <div class="swipe-hint" id="swipeHint">📊 載入中...</div>
-                    <div class="card-action-btns">
+                    <div>
                         <button class="edit-quote-btn" onclick="openEditQuoteModal()">✏️ 編輯</button>
                         <button class="delete-quote-btn" onclick="deleteCurrentQuote()">🗑️ 刪除</button>
                     </div>
                 </div>
 
-                <!-- 金句主體 -->
                 <div class="quote-text" id="cardText">載入中...</div>
+                
                 <div class="quote-meta">
                     <div id="cardSource"></div>
                     <div id="cardDate" style="font-size: 11pt; margin-top: 4px;"></div>
                 </div>
 
-                <!-- 標籤區（位在語錄下方、心得歷史上方） -->
                 <div class="tags-container" id="cardTags"></div>
 
-                <!-- 心得註解區 -->
                 <div class="notes-section">
                     <div class="notes-toggle-bar">
                         <button class="notes-toggle" onclick="toggleNotes()">💬 檢視心得歷史 (<span id="noteCount">0</span>)</button>
@@ -527,6 +539,14 @@
                 <option value="SHUFFLE">🃏 洗牌模式 (不重複抽，讀完才洗牌)</option>
             </select>
 
+            <label style="display:block; margin: 10px 0; font-weight: bold; color: var(--accent-color);">朗讀語速設定：</label>
+            <select id="speechRateSelect" onchange="changeSpeechRate(this.value)" style="width:100%; margin-bottom: 15px; font-size:14pt; padding:8px;">
+                <option value="1.0">1.0x (標準速度)</option>
+                <option value="1.25" selected>1.25x (輕快推薦)</option>
+                <option value="1.5">1.5x (快速)</option>
+                <option value="2.0">2.0x (極速)</option>
+            </select>
+
             <label style="display:block; margin: 10px 0;">字體大小微調：</label>
             <select id="fontSizeSelect" onchange="changeFontSize(this.value)" style="width:100%; font-size:14pt; padding:8px;">
                 <option value="20pt">中 (20pt)</option>
@@ -572,6 +592,11 @@
         let shuffledQueue = [];
         let shuffleIndex = 0;
 
+        // 語音朗讀變數
+        let isSpeaking = false;
+        let speechRate = 1.25;
+        let synth = window.speechSynthesis;
+
         window.onload = function() {
             const saved = localStorage.getItem('my_quotes_data');
             if (saved) {
@@ -585,6 +610,12 @@
             if (savedMode) {
                 drawMode = savedMode;
                 document.getElementById('drawModeSelect').value = drawMode;
+            }
+
+            const savedRate = localStorage.getItem('my_speech_rate');
+            if (savedRate) {
+                speechRate = parseFloat(savedRate);
+                document.getElementById('speechRateSelect').value = savedRate;
             }
 
             updateCategoryDropdown();
@@ -605,6 +636,12 @@
             renderCard();
         }
 
+        function changeSpeechRate(rate) {
+            speechRate = parseFloat(rate);
+            localStorage.setItem('my_speech_rate', rate);
+            showToast(`🔊 朗讀語速調整為 ${rate}x`);
+        }
+
         function showToast(msg) {
             const toast = document.getElementById('toast');
             toast.innerText = msg;
@@ -612,6 +649,70 @@
             setTimeout(() => {
                 toast.classList.remove('show');
             }, 1500);
+        }
+
+        /* 語音朗讀核心邏輯 */
+        function toggleSpeech() {
+            if (!synth) {
+                showToast("❌ 您的設備不支援語音朗讀");
+                return;
+            }
+
+            if (isSpeaking) {
+                stopSpeech();
+            } else {
+                startSpeech();
+            }
+        }
+
+        function startSpeech() {
+            if (!currentQuote) return;
+            isSpeaking = true;
+            const ttsBtn = document.getElementById('ttsBtn');
+            ttsBtn.innerText = "⏹️";
+            ttsBtn.classList.add('btn-speaking');
+            ttsBtn.title = "停止朗讀";
+            speakCurrentQuote();
+        }
+
+        function stopSpeech() {
+            isSpeaking = false;
+            if (synth) synth.cancel();
+            const ttsBtn = document.getElementById('ttsBtn');
+            ttsBtn.innerText = "🔊";
+            ttsBtn.classList.remove('btn-speaking');
+            ttsBtn.title = "語音連續朗讀";
+        }
+
+        function speakCurrentQuote() {
+            if (!isSpeaking || !currentQuote) return;
+
+            synth.cancel(); // 清除之前的發音
+
+            let readText = currentQuote.text;
+            if (currentQuote.source) {
+                readText += `。 來源：${currentQuote.source}`;
+            }
+
+            const utterance = new SpeechSynthesisUtterance(readText);
+            utterance.lang = 'zh-TW';
+            utterance.rate = speechRate;
+
+            // 朗讀完畢後自動播下一張並繼續朗讀
+            utterance.onend = function() {
+                if (isSpeaking) {
+                    setTimeout(() => {
+                        renderCard();
+                        speakCurrentQuote();
+                    }, 600); // 間隔 0.6 秒切換下一張
+                }
+            };
+
+            utterance.onerror = function() {
+                stopSpeech();
+            };
+
+            synth.speak(utterance);
         }
 
         function getAllUniqueTags() {
@@ -669,6 +770,7 @@
             searchQuery = document.getElementById('searchInput').value.trim().toLowerCase();
             resetShuffleQueue();
             renderCard();
+            if (isSpeaking) speakCurrentQuote();
         }
 
         function clearSearch() {
@@ -677,6 +779,7 @@
             document.getElementById('searchBarContainer').style.display = 'none';
             resetShuffleQueue();
             renderCard();
+            if (isSpeaking) speakCurrentQuote();
         }
 
         function getFilteredQuotes() {
@@ -741,6 +844,7 @@
                 currentQuote = null;
                 likeBtn.classList.remove('is-liked');
                 swipeHint.innerText = '📊 當前共 0 則卡片';
+                if (isSpeaking) stopSpeech();
                 return;
             }
 
@@ -753,7 +857,7 @@
                 currentQuote = shuffledQueue[shuffleIndex];
                 
                 if (searchQuery !== "") {
-                    swipeHint.innerText = `🔍 搜尋「${searchQuery}」匹配 ${pool.length} 則 (${shuffleIndex + 1}/${pool.length})`;
+                    swipeHint.innerText = `🔍 搜尋「${searchQuery}」匹配 ${pool.length} 則 (洗牌模式：${shuffleIndex + 1}/${pool.length})`;
                 } else {
                     swipeHint.innerText = `🃏 洗牌不重複：第 ${shuffleIndex + 1} / ${pool.length} 則`;
                 }
@@ -791,6 +895,7 @@
         function filterCategory() {
             resetShuffleQueue();
             renderCard();
+            if (isSpeaking) speakCurrentQuote();
         }
 
         function handleAction(type) {
@@ -820,8 +925,10 @@
                     showToast(`🌙 已移入沉睡庫 (${currentQuote.dislikes}/5)`);
                 }
                 renderCard();
+                if (isSpeaking) speakCurrentQuote();
             } else if (type === 'NEXT') {
                 renderCard();
+                if (isSpeaking) speakCurrentQuote();
             }
         }
 
@@ -846,6 +953,7 @@
                     setTimeout(() => {
                         renderCard();
                         cardWrapper.style.opacity = '1';
+                        if (isSpeaking) speakCurrentQuote();
                     }, 150);
                 }
             }, { passive: true });
@@ -912,6 +1020,7 @@
         }
 
         function openAddQuoteModal() {
+            if (isSpeaking) stopSpeech();
             isEditingQuote = false;
             selectedChips.clear();
             document.getElementById('quoteModalTitle').innerText = "新增語錄 / 讀書筆記";
@@ -924,6 +1033,7 @@
 
         function openEditQuoteModal() {
             if (!currentQuote) return;
+            if (isSpeaking) stopSpeech();
             isEditingQuote = true;
             selectedChips = new Set(currentQuote.tags || []);
             document.getElementById('quoteModalTitle').innerText = "編輯目前這則語錄與標籤";
@@ -944,6 +1054,7 @@
                     resetShuffleQueue();
                     showToast("🗑️ 已成功刪除卡片");
                     renderCard();
+                    if (isSpeaking) speakCurrentQuote();
                 }
             }
         }
@@ -995,6 +1106,7 @@
 
         function openAddNoteModal() {
             if (!currentQuote) return;
+            if (isSpeaking) stopSpeech();
             editingNoteIndex = null;
             document.getElementById('noteModalTitle').innerText = "寫下您的閱讀心得與體悟";
             document.getElementById('newNoteText').value = "";
@@ -1002,6 +1114,7 @@
         }
 
         function editNote(index) {
+            if (isSpeaking) stopSpeech();
             editingNoteIndex = index;
             document.getElementById('noteModalTitle').innerText = "編輯您的心得體悟";
             document.getElementById('newNoteText').value = currentQuote.notes[index].content;
