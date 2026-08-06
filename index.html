@@ -539,6 +539,11 @@
                 <option value="SHUFFLE">🃏 洗牌模式 (不重複抽，讀完才洗牌)</option>
             </select>
 
+            <label style="display:block; margin: 10px 0; font-weight: bold; color: var(--accent-color);">朗讀聲音角色選擇：</label>
+            <select id="voiceSelect" onchange="changeVoice(this.value)" style="width:100%; margin-bottom: 15px; font-size:14pt; padding:8px;">
+                <option value="DEFAULT">🗣️ 系統預設聲音</option>
+            </select>
+
             <label style="display:block; margin: 10px 0; font-weight: bold; color: var(--accent-color);">朗讀語速設定：</label>
             <select id="speechRateSelect" onchange="changeSpeechRate(this.value)" style="width:100%; margin-bottom: 15px; font-size:14pt; padding:8px;">
                 <option value="1.0">1.0x (標準速度)</option>
@@ -595,6 +600,8 @@
         // 語音朗讀變數
         let isSpeaking = false;
         let speechRate = 1.25;
+        let selectedVoiceURI = "DEFAULT";
+        let availableVoices = [];
         let synth = window.speechSynthesis;
 
         window.onload = function() {
@@ -618,14 +625,67 @@
                 document.getElementById('speechRateSelect').value = savedRate;
             }
 
+            const savedVoice = localStorage.getItem('my_speech_voice');
+            if (savedVoice) {
+                selectedVoiceURI = savedVoice;
+            }
+
             updateCategoryDropdown();
             renderCard();
             setupTouchEvents();
+            initVoices();
         };
 
         function saveData() {
             localStorage.setItem('my_quotes_data', JSON.stringify(quotes));
             updateCategoryDropdown();
+        }
+
+        /* 初始化並加載系統內建聲音角色 */
+        function initVoices() {
+            if (!synth) return;
+
+            function populateVoiceList() {
+                availableVoices = synth.getVoices();
+                const select = document.getElementById('voiceSelect');
+                if (!select) return;
+
+                // 篩選中文/國語/廣東話語音，按性別與音色分類
+                const zhVoices = availableVoices.filter(v => v.lang.includes('zh') || v.lang.includes('cmn') || v.lang.includes('yue'));
+
+                let html = '<option value="DEFAULT">🗣️ 系統預設聲音</option>';
+
+                zhVoices.forEach((v) => {
+                    let label = v.name;
+                    let icon = "🗣️";
+
+                    const nameLower = v.name.toLowerCase();
+                    if (nameLower.includes('male') || nameLower.includes('danny') || nameLower.includes('yunxi') || nameLower.includes('yunjian') || nameLower.includes('ken')) {
+                        icon = nameLower.includes('young') ? "👦" : "👨";
+                    } else if (nameLower.includes('female') || nameLower.includes('xiaoxiao') || nameLower.includes('meijia') || nameLower.includes('hanhan') || nameLower.includes('hiujaan')) {
+                        icon = nameLower.includes('young') ? "👧" : "👩";
+                    } else if (nameLower.includes('child') || nameLower.includes('kid')) {
+                        icon = "👶";
+                    }
+
+                    html += `<option value="${v.voiceURI}">${icon} ${label} (${v.lang})</option>`;
+                });
+
+                select.innerHTML = html;
+                select.value = selectedVoiceURI || 'DEFAULT';
+            }
+
+            populateVoiceList();
+            if (speechSynthesis.onvoiceschanged !== undefined) {
+                speechSynthesis.onvoiceschanged = populateVoiceList;
+            }
+        }
+
+        function changeVoice(voiceURI) {
+            selectedVoiceURI = voiceURI;
+            localStorage.setItem('my_speech_voice', voiceURI);
+            showToast("🗣️ 朗讀聲音角色已變更");
+            if (isSpeaking) speakCurrentQuote();
         }
 
         function changeDrawMode(mode) {
@@ -640,6 +700,7 @@
             speechRate = parseFloat(rate);
             localStorage.setItem('my_speech_rate', rate);
             showToast(`🔊 朗讀語速調整為 ${rate}x`);
+            if (isSpeaking) speakCurrentQuote();
         }
 
         function showToast(msg) {
@@ -687,7 +748,7 @@
         function speakCurrentQuote() {
             if (!isSpeaking || !currentQuote) return;
 
-            synth.cancel(); // 清除之前的發音
+            synth.cancel();
 
             let readText = currentQuote.text;
             if (currentQuote.source) {
@@ -698,13 +759,18 @@
             utterance.lang = 'zh-TW';
             utterance.rate = speechRate;
 
-            // 朗讀完畢後自動播下一張並繼續朗讀
+            // 指定選擇的聲音角色
+            if (selectedVoiceURI !== "DEFAULT" && availableVoices.length > 0) {
+                const targetVoice = availableVoices.find(v => v.voiceURI === selectedVoiceURI);
+                if (targetVoice) utterance.voice = targetVoice;
+            }
+
             utterance.onend = function() {
                 if (isSpeaking) {
                     setTimeout(() => {
                         renderCard();
                         speakCurrentQuote();
-                    }, 600); // 間隔 0.6 秒切換下一張
+                    }, 600);
                 }
             };
 
