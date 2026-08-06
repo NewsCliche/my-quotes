@@ -575,15 +575,108 @@
     </div>
 
     <script>
+        /* 內建 100 則嚴選高品質金句資料庫 */
         const defaultQuotes = [
-            { id: 1, text: "我們重複做的事情，造就了我們；卓越不是一個行為，而是一個習慣。", source: "《原子習慣》", tags: ["心靈成長", "習慣養成"], date: "2026-08-04", liked: false, dislikes: 0, notes: [] },
-            { id: 2, text: "如果你找不到一個在你睡覺時還能掙錢的方法，你將會工作到死。", source: "華倫·巴菲特", tags: ["財富自由", "商業"], date: "2026-08-04", liked: false, dislikes: 0, notes: [] },
-            { id: 3, text: "資產就是能把錢放進你口袋的東西，負債則是把錢從你口袋掏走的東西。", source: "《富爸爸，窮爸爸》", tags: ["財富自由"], date: "2026-08-04", liked: false, dislikes: 0, notes: [] },
-            { id: 4, text: "複利是世界第八大奇蹟。知之者賺，不知者賠。", source: "愛因斯坦", tags: ["財富自由", "習慣養成"], date: "2026-08-04", liked: false, dislikes: 0, notes: [] },
-            { id: 5, text: "專注不是對你想做的事說『好』，而是對另外一百個好點子說『不』。", source: "史蒂夫·賈伯斯", tags: ["商業"], date: "2026-08-04", liked: false, dislikes: 0, notes: [] },
-            { id: 6, text: "你不會降臨到你目標的高度，你只會跌落到你系統的水平。", source: "《原子習慣》", tags: ["習慣養成", "商業"], date: "2026-08-04", liked: false, dislikes: 0, notes: [] },
-            { id: 7, text: "關注你能控制的事，放下你無法控制的事。", source: "斯多葛哲學", tags: ["心靈成長"], date: "2026-08-04", liked: false, dislikes: 0, notes: [] },
-            { id: 8, text: "投資自己的大腦，是報酬率最高、且永遠不會被扣稅或偷走的一筆資產。", source: "查理·芒格", tags: ["財富自由", "心靈成長"], date: "2026-08-04", liked: false, dislikes: 0, notes: [] }
+            { id: 1, text: "我們重複做的事情，造就了我們；卓越不是一個行為，而是一個習慣。", source: "亞里斯多德", tags: ["習慣養成", "心靈成長"], date: "2026-08-06", liked: false, dislikes: 0, notes: [] },
+            { id: 2, text: "如果你找不到一個在你睡覺時還能掙錢的方法，你將會工作到死。", source: "華倫·巴菲特", tags: ["財富自由", "商業"], date: "2026-08-06", liked: false, dislikes: 0, notes: [] },
+            { id: 3, text: "資產就是能把錢放進你口袋的東西，負債則是把錢從你口袋掏走的東西。", source: "《富爸爸，窮爸爸》", tags: ["財富自由"], date: "2026-08-06", liked: false, dislikes: 0, notes: [] },
+            { id: 4, text: "複利是世界第八大奇蹟。知之者賺，不知者賠。", source: "愛因斯坦", tags: ["財富自由", "習慣養成"], date: "2026-08-06", liked: false, dislikes: 0, notes: [] },
+            { id: 5, text: "專注不是對你想做的事說『好』，而是對另外一百個好點子說『不』。", source: "史蒂夫·賈伯斯", tags: ["商業", "時間管理"], date: "2026-08-06", liked: false, dislikes: 0, notes: [] },
+            { id: 6, text: "你不會降臨到你目標的高度，你只會跌落到你系統的水平。", source: "《原子習慣》", tags: ["習慣養成", "商業"], date: "2026-08-06", liked: false, dislikes: 0, notes: [] },
+            { id: 7, text: "關注你能控制的事，放下你無法控制的事。心靈的平靜來自於對界線的清晰認知。", source: "斯多葛哲學", tags: ["心靈成長", "人際處世"], date: "2026-08-06", liked: false, dislikes: 0, notes: [] },
+            { id: 8, text: "投資自己的大腦，是報酬率最高、且永遠不會被扣稅或偷走的一筆資產。", source: "查理·芒格", tags: ["財富自由", "心靈成長"], date: "2026-08-06", liked: false, dislikes: 0, notes: [] },
+            { id: 9, text: "真正的財富不是擁有多高薪的工作，而是當你停止工作時，資產還能支持你生活多久。", source: "羅伯特·清崎", tags: ["財富自由"], date: "2026-08-06", liked: false, dislikes: 0, notes: [] },
+            { id: 10, text: "不要尋找顧客來賣你的產品，要為你的顧客尋找合適的產品。", source: "賽斯·高汀", tags: ["商業"], date: "2026-08-06", liked: false, dislikes: 0, notes: [] },
+            { id: 11, text: "每天進步 1%，一年後你會進步 37 倍；每天退步 1%，一年後你會降到接近 0。", source: "《原子習慣》", tags: ["習慣養成", "財富自由"], date: "2026-08-06", liked: false, dislikes: 0, notes: [] },
+            { id: 12, text: "商業的本質不是競爭，而是創造獨特的價值，解決別人的痛點。", source: "《從 0 到 1》", tags: ["商業"], date: "2026-08-06", liked: false, dislikes: 0, notes: [] },
+            { id: 13, text: "人們高估了一年內能做的事，卻低估了十年內能完成的事。", source: "比爾·蓋茲", tags: ["時間管理", "習慣養成"], date: "2026-08-06", liked: false, dislikes: 0, notes: [] },
+            { id: 14, text: "風險來自於你不知道自己在做什麼。", source: "華倫·巴菲特", tags: ["財富自由", "商業"], date: "2026-08-06", liked: false, dislikes: 0, notes: [] },
+            { id: 15, text: "建立系統，讓流程替你工作；建立紀錄，讓數據幫你思考。", source: "《系統思考》", tags: ["習慣養成", "商業"], date: "2026-08-06", liked: false, dislikes: 0, notes: [] },
+            { id: 16, text: "財務自由的本質，不是可以買任何東西，而是可以拒絕做任何你不想做的事。", source: "《納瓦爾寶典》", tags: ["財富自由", "心靈成長"], date: "2026-08-06", liked: false, dislikes: 0, notes: [] },
+            { id: 17, text: "養成一個好習慣很辛苦，但生活會變輕鬆；養成一個壞習慣很輕鬆，但生活會變辛苦。", source: "《微習慣》", tags: ["習慣養成", "心靈成長"], date: "2026-08-06", liked: false, dislikes: 0, notes: [] },
+            { id: 18, text: "如果你給出的價值遠高於你收取的價格，顧客就會自動成為你最好的推銷員。", source: "商業經營法則", tags: ["商業"], date: "2026-08-06", liked: false, dislikes: 0, notes: [] },
+            { id: 19, text: "慢一點沒關係，但方向必須對。在錯誤的道路上奔跑，再快也是徒勞。", source: "經營策略筆記", tags: ["商業", "心靈成長"], date: "2026-08-06", liked: false, dislikes: 0, notes: [] },
+            { id: 20, text: "市場短期是投票機，長期是秤重機。專注於價值的累積而非價格的波動。", source: "班傑明·葛拉漢", tags: ["財富自由"], date: "2026-08-06", liked: false, dislikes: 0, notes: [] },
+            { id: 21, text: "賺錢靠的是系統與資產，而不是單純賣斷時間。", source: "《納瓦爾寶典》", tags: ["財富自由", "商業"], date: "2026-08-06", liked: false, dislikes: 0, notes: [] },
+            { id: 22, text: "在別人貪婪時恐懼，在別人恐懼時貪婪。", source: "華倫·巴菲特", tags: ["財富自由"], date: "2026-08-06", liked: false, dislikes: 0, notes: [] },
+            { id: 23, text: "延遲享樂的能力，是決定一個人能否達到財務自由最重要的心理特質。", source: "《致富的心態》", tags: ["財富自由", "習慣養成"], date: "2026-08-06", liked: false, dislikes: 0, notes: [] },
+            { id: 24, text: "最昂貴的成本是機會成本，最危險的風險是不懂裝懂。", source: "查理·芒格", tags: ["財富自由", "商業"], date: "2026-08-06", liked: false, dislikes: 0, notes: [] },
+            { id: 25, text: "凡殺不死我的，必使我更強大。", source: "尼采 《偶像的黃昏》", tags: ["心靈成長"], date: "2026-08-06", liked: false, dislikes: 0, notes: [] },
+            { id: 26, text: "你不需要很棒才能開始，但你必須開始才能變得很棒。", source: "萊斯·布朗", tags: ["心靈成長", "習慣養成"], date: "2026-08-06", liked: false, dislikes: 0, notes: [] },
+            { id: 27, text: "把時間花在重要但不緊急的事情上，是擺脫平庸與忙亂唯一的解藥。", source: "《與成功有約》", tags: ["時間管理", "習慣養成"], date: "2026-08-06", liked: false, dislikes: 0, notes: [] },
+            { id: 28, text: "80% 的成果來自於 20% 的關鍵努力。找出你的那 20%，然後全力以赴。", source: "80/20 法則", tags: ["時間管理", "商業"], date: "2026-08-06", liked: false, dislikes: 0, notes: [] },
+            { id: 29, text: "與其討好每一個人，不如建立清晰的個人界線，讓合適的人靠近，讓不合適的人離開。", source: "《被討厭的勇氣》", tags: ["人際處世", "心靈成長"], date: "2026-08-06", liked: false, dislikes: 0, notes: [] },
+            { id: 30, text: "情緒是選擇，不是反應。當你停止為自己的情緒怪罪他人，你就掌握了人生的主導權。", source: "阿德勒心理學", tags: ["心靈成長", "人際處世"], date: "2026-08-06", liked: false, dislikes: 0, notes: [] },
+            { id: 31, text: "深度工作力是這個時代最稀缺的技能。能抵抗干擾、長時間專注的人，將獲得不對稱的優勢。", source: "《深度工作力》", tags: ["時間管理", "商業"], date: "2026-08-06", liked: false, dislikes: 0, notes: [] },
+            { id: 32, text: "真正的高手，都是長期主義者。他們在微小的日常裡複利，不急於一時的顯赫。", source: "個人成長筆記", tags: ["習慣養成", "心靈成長"], date: "2026-08-06", liked: false, dislikes: 0, notes: [] },
+            { id: 33, text: "不要在憤怒時做決定，不要在狂喜時許承諾。", source: "處世智慧", tags: ["人際處世", "心靈成長"], date: "2026-08-06", liked: false, dislikes: 0, notes: [] },
+            { id: 34, text: "擁有的東西越少，選擇的自由就越多。斷捨離不只是清理空間，更是淨化心靈。", source: "極簡主義", tags: ["心靈成長", "時間管理"], date: "2026-08-06", liked: false, dislikes: 0, notes: [] },
+            { id: 35, text: "最高級的溝通，不是改變對方的想法，而是創造讓對方感到被尊重與被理解的氛圍。", source: "溝通心理學", tags: ["人際處世"], date: "2026-08-06", liked: false, dislikes: 0, notes: [] },
+            { id: 36, text: "最好的學習方式是輸出。把學到的東西講給別人聽，或者寫成筆記，才是真正的掌握。", source: "費曼學習法", tags: ["習慣養成", "心靈成長"], date: "2026-08-06", liked: false, dislikes: 0, notes: [] },
+            { id: 37, text: "人生沒有白走的路，每一步都算數。過去的經歷不論好壞，都是組成現在你的養分。", source: "人生體悟", tags: ["心靈成長"], date: "2026-08-06", liked: false, dislikes: 0, notes: [] },
+            { id: 38, text: "極端的專注就是一種超能力，多數人的失敗不是因為能力不夠，而是注意力太過分散。", source: "《聚焦力》", tags: ["時間管理", "習慣養成"], date: "2026-08-06", liked: false, dislikes: 0, notes: [] },
+            { id: 39, text: "如果你連自己的飲食與作息都無法控制，又憑什麼認為自己能掌控人生？", source: "自律筆記", tags: ["習慣養成", "心靈成長"], date: "2026-08-06", liked: false, dislikes: 0, notes: [] },
+            { id: 40, text: "別把運氣當成實力，也別把一時的挫折當成終局的命運。", source: "商業體悟", tags: ["商業", "心靈成長"], date: "2026-08-06", liked: false, dislikes: 0, notes: [] },
+            { id: 41, text: "金錢是一種能量，也是你對這個世界產生價值的投票結果。", source: "《致富的心態》", tags: ["財富自由"], date: "2026-08-06", liked: false, dislikes: 0, notes: [] },
+            { id: 42, text: "真正成熟的標誌，是意識到這個世界上發生的絕大多數事情，都與你無關。", source: "處世哲學", tags: ["人際處世", "心靈成長"], date: "2026-08-06", liked: false, dislikes: 0, notes: [] },
+            { id: 43, text: "優秀的公司滿足需求，偉大的公司創造渴望。", source: "菲利普·科特勒", tags: ["商業"], date: "2026-08-06", liked: false, dislikes: 0, notes: [] },
+            { id: 44, text: "時間是你唯一的不可再生資源，用時間換取金錢是最低階的交易。", source: "《納瓦爾寶典》", tags: ["財富自由", "時間管理"], date: "2026-08-06", liked: false, dislikes: 0, notes: [] },
+            { id: 45, text: "建立紀律的最好方式，是降低開始的門檻，而不是提升意志力的強度。", source: "《微習慣》", tags: ["習慣養成"], date: "2026-08-06", liked: false, dislikes: 0, notes: [] },
+            { id: 46, text: "不要爭論，直接拿出成果。事實是最好的說服工具。", source: "職場處世觀", tags: ["人際處世", "商業"], date: "2026-08-06", liked: false, dislikes: 0, notes: [] },
+            { id: 47, text: "心安即是歸處。外界越是紛亂，內心越要保持專注與平靜。", source: "禪宗智慧", tags: ["心靈成長"], date: "2026-08-06", liked: false, dislikes: 0, notes: [] },
+            { id: 48, text: "成功不是終點，失敗也不是致命的，唯有勇往直前的勇氣才是永恆。", source: "溫斯頓·邱吉爾", tags: ["心靈成長"], date: "2026-08-06", liked: false, dislikes: 0, notes: [] },
+            { id: 49, text: "如果你想走得快，一個人走；如果你想走得遠，一群人走。", source: "非洲諺語", tags: ["人際處世", "商業"], date: "2026-08-06", liked: false, dislikes: 0, notes: [] },
+            { id: 50, text: "世界上只有一種真正的英雄主義，那就是認清生活的真相後依然熱愛生活。", source: "羅曼·羅蘭", tags: ["心靈成長"], date: "2026-08-06", liked: false, dislikes: 0, notes: [] },
+            { id: 51, text: "你所關注的事情會擴大。專注於解決方案，而不是糾結於問題本身。", source: "心理學法則", tags: ["習慣養成", "心靈成長"], date: "2026-08-06", liked: false, dislikes: 0, notes: [] },
+            { id: 52, text: "不要為打翻的牛奶哭泣，也不要為還沒發生的明天焦慮。活在當下是最明智的策略。", source: "斯多葛哲學", tags: ["心靈成長", "時間管理"], date: "2026-08-06", liked: false, dislikes: 0, notes: [] },
+            { id: 53, text: "商業上最大的危險不是來自競爭對手，而是來自顧客需求的改變與你自己拒絕進化。", source: "安迪·葛洛夫", tags: ["商業"], date: "2026-08-06", liked: false, dislikes: 0, notes: [] },
+            { id: 54, text: "一個人的品格，體現在他如何對待那些對他沒有任何利用價值的人。", source: "處世觀點", tags: ["人際處世"], date: "2026-08-06", liked: false, dislikes: 0, notes: [] },
+            { id: 55, text: "最好的理財就是降低慾望，因為你的支出少，你的自由度就高。", source: "《致富的心態》", tags: ["財富自由"], date: "2026-08-06", liked: false, dislikes: 0, notes: [] },
+            { id: 56, text: "養成習慣的初期，『持續性』遠比『完美度』更重要。", source: "《原子習慣》", tags: ["習慣養成"], date: "2026-08-06", liked: false, dislikes: 0, notes: [] },
+            { id: 57, text: "做你熱愛的事，並持續輸出，市場最終會給予你應得的回報。", source: "《納瓦爾寶典》", tags: ["商業", "財富自由"], date: "2026-08-06", liked: false, dislikes: 0, notes: [] },
+            { id: 58, text: "焦慮來自於未知的失控感，解決焦慮最好的方法就是立刻行動。", source: "行動力指南", tags: ["心靈成長", "時間管理"], date: "2026-08-06", liked: false, dislikes: 0, notes: [] },
+            { id: 59, text: "不要用戰術上的勤奮，來掩蓋戰略上的懶惰。", source: "雷軍", tags: ["商業", "時間管理"], date: "2026-08-06", liked: false, dislikes: 0, notes: [] },
+            { id: 60, text: "真正的禮貌不是客套，而是讓與你相處的人感到自在與被尊重。", source: "處世之道", tags: ["人際處世"], date: "2026-08-06", liked: false, dislikes: 0, notes: [] },
+            { id: 61, text: "投資就像等公交車，錯過了一趟沒關係，下一趟很快就會來，切忌盲目跳上危險的車。", source: "投資經驗談", tags: ["財富自由"], date: "2026-08-06", liked: false, dislikes: 0, notes: [] },
+            { id: 62, text: "當你能夠靜下心來閱讀與思考時，你已經超越了這個時代大多數浮躁的人。", source: "讀書體悟", tags: ["心靈成長", "習慣養成"], date: "2026-08-06", liked: false, dislikes: 0, notes: [] },
+            { id: 63, text: "系統化的工作流程，能把你從繁瑣的日常細節中解脫出來，去思考更重要的戰略。", source: "《工作大師》", tags: ["商業", "時間管理"], date: "2026-08-06", liked: false, dislikes: 0, notes: [] },
+            { id: 64, text: "不給別人添麻煩，是做人的底線；能給別人帶來價值，是做人的上限。", source: "處世名言", tags: ["人際處世"], date: "2026-08-06", liked: false, dislikes: 0, notes: [] },
+            { id: 65, text: "財富的積累不是靠一兩次暴富，而是靠長期穩定的正向現金流。", source: "《理財範式》", tags: ["財富自由"], date: "2026-08-06", liked: false, dislikes: 0, notes: [] },
+            { id: 66, text: "學會說『不知道』，是邁向真正智慧的第一步。", source: "蘇格拉底", tags: ["心靈成長"], date: "2026-08-06", liked: false, dislikes: 0, notes: [] },
+            { id: 67, text: "環境比意志力更重要。打造一個讓你不得不專注的環境，比強迫自己專注有效十倍。", source: "《環境的力量》", tags: ["習慣養成", "時間管理"], date: "2026-08-06", liked: false, dislikes: 0, notes: [] },
+            { id: 68, text: "好的產品自己會說話，好的服務會讓顧客幫你傳播。", source: "行銷金律", tags: ["商業"], date: "2026-08-06", liked: false, dislikes: 0, notes: [] },
+            { id: 69, text: "學會享受孤獨，因為那是你與自己深度對話、獲得內心力量的最佳時刻。", source: "叔本華", tags: ["心靈成長"], date: "2026-08-06", liked: false, dislikes: 0, notes: [] },
+            { id: 70, text: "凡事提前十分鐘，能讓你避開人生中 90% 的慌亂與失誤。", source: "時間管理法則", tags: ["時間管理", "習慣養成"], date: "2026-08-06", liked: false, dislikes: 0, notes: [] },
+            { id: 71, text: "真正的自信，不是認為自己不會失敗，而是即便失敗了也知道自己能重新站起來。", source: "心理學導論", tags: ["心靈成長"], date: "2026-08-06", liked: false, dislikes: 0, notes: [] },
+            { id: 72, text: "給別人留餘地，就是給自己留後路。", source: "處世智慧", tags: ["人際處世"], date: "2026-08-06", liked: false, dislikes: 0, notes: [] },
+            { id: 73, text: "懂得拒絕不重要的邀請，才能對真正重要的人生目標說『YES』。", source: "《精要主義》", tags: ["時間管理", "心靈成長"], date: "2026-08-06", liked: false, dislikes: 0, notes: [] },
+            { id: 74, text: "產品賣不出去，通常不是因為價格太高，而是因為顧客沒有感知到價值。", source: "銷售思維", tags: ["商業"], date: "2026-08-06", liked: false, dislikes: 0, notes: [] },
+            { id: 75, text: "健康是 1，後面的財富、事業、名利都是 0。沒有了 1，再多的 0 都沒有意義。", source: "養生體悟", tags: ["習慣養成", "心靈成長"], date: "2026-08-06", liked: false, dislikes: 0, notes: [] },
+            { id: 76, text: "抱怨現狀是世上最無用的消耗，去改變能改變的，去接受不能改變的。", source: "斯多葛哲學", tags: ["心靈成長"], date: "2026-08-06", liked: false, dislikes: 0, notes: [] },
+            { id: 77, text: "把每一天都當作人生的最後一天來過，你會發現真正值得珍惜的東西並不多。", source: "史蒂夫·賈伯斯", tags: ["心靈成長", "時間管理"], date: "2026-08-06", liked: false, dislikes: 0, notes: [] },
+            { id: 78, text: "複利不只存在於財富，健康、知識與人際關係同樣適用複利效應。", source: "《複利人生》", tags: ["習慣養成", "財富自由"], date: "2026-08-06", liked: false, dislikes: 0, notes: [] },
+            { id: 79, text: "好的合作關係是雙贏，企圖單方面占便宜的合作絕對無法長久。", source: "商業談判法則", tags: ["商業", "人際處世"], date: "2026-08-06", liked: false, dislikes: 0, notes: [] },
+            { id: 80, text: "傾聽比表達更具力量。聽懂對方的潛台詞，是深層溝通的鑰匙。", source: "《傾聽的藝術》", tags: ["人際處世"], date: "2026-08-06", liked: false, dislikes: 0, notes: [] },
+            { id: 81, text: "定期清理你的房間與手機通訊錄，讓你的生活空間與心靈空間保持清爽。", source: "極簡生活筆記", tags: ["習慣養成", "心靈成長"], date: "2026-08-06", liked: false, dislikes: 0, notes: [] },
+            { id: 82, text: "成功需要時間沉澱，急功近利往往只會適得其反。", source: "長期主義", tags: ["習慣養成", "商業"], date: "2026-08-06", liked: false, dislikes: 0, notes: [] },
+            { id: 83, text: "不要期待所有人都能理解你，做好你自己，時間會證明一切。", source: "《被討厭的勇氣》", tags: ["人際處世", "心靈成長"], date: "2026-08-06", liked: false, dislikes: 0, notes: [] },
+            { id: 84, text: "建立個人的『不為清單』，比建立『待辦清單』更能夠提升效率。", source: "時間管理指南", tags: ["時間管理", "習慣養成"], date: "2026-08-06", liked: false, dislikes: 0, notes: [] },
+            { id: 85, text: "市場總是充滿噪音，保持冷靜並堅持原則是唯一的生存之道。", source: "查理·芒格", tags: ["財富自由", "商業"], date: "2026-08-06", liked: false, dislikes: 0, notes: [] },
+            { id: 86, text: "多讀書，讀好書，那是與歷史上最偉大靈魂對話的最廉價方式。", source: "閱讀心得", tags: ["心靈成長", "習慣養成"], date: "2026-08-06", liked: false, dislikes: 0, notes: [] },
+            { id: 87, text: "承認自己的無知，是獲得知識的起點；承認自己的不足，是成長的開端。", source: "哲學思考", tags: ["心靈成長"], date: "2026-08-06", liked: false, dislikes: 0, notes: [] },
+            { id: 88, text: "每天花 15 分鐘回顧今天做對了什麼、哪裡可以改進，是成本最低的成長法。", source: "反思日誌指南", tags: ["習慣養成", "時間管理"], date: "2026-08-06", liked: false, dislikes: 0, notes: [] },
+            { id: 89, text: "對員工最好的福利，不是免費零食，而是給他與高手共事、快速成長的機會。", source: "《網飛高績效繁榮工作法》", tags: ["商業"], date: "2026-08-06", liked: false, dislikes: 0, notes: [] },
+            { id: 90, text: "不要在深夜做任何重大決定，睡眠是解決情緒問題最好的藥方。", source: "健康智慧", tags: ["心靈成長", "習慣養成"], date: "2026-08-06", liked: false, dislikes: 0, notes: [] },
+            { id: 91, text: "對未來的最好準備，就是把今天的每一件事情做好。", source: "《卡耐基溝通術》", tags: ["心靈成長", "時間管理"], date: "2026-08-06", liked: false, dislikes: 0, notes: [] },
+            { id: 92, text: "真正的自由不是想幹什麼就幹什麼，而是想不幹什麼就有能力不幹什麼。", source: "康德", tags: ["心靈成長", "財富自由"], date: "2026-08-06", liked: false, dislikes: 0, notes: [] },
+            { id: 93, text: "品牌是顧客在沒有看到你產品時，腦海裡對你的第一印象。", source: "品牌學思維", tags: ["商業"], date: "2026-08-06", liked: false, dislikes: 0, notes: [] },
+            { id: 94, text: "別把別人的讚美太當真，也別把別人的批評太放在心上，保持內心的平靜。", source: "處世態度", tags: ["人際處世", "心靈成長"], date: "2026-08-06", liked: false, dislikes: 0, notes: [] },
+            { id: 95, text: "最好的省錢方式，不是到處比價省小錢，而是把精力拿去提升自己的賺錢能力。", source: "財富增長觀", tags: ["財富自由"], date: "2026-08-06", liked: false, dislikes: 0, notes: [] },
+            { id: 96, text: "成功是個差勁的老師，它誘使聰明人以為自己不會失敗。", source: "比爾·蓋茲", tags: ["商業", "心靈成長"], date: "2026-08-06", liked: false, dislikes: 0, notes: [] },
+            { id: 97, text: "建立良好的第一印象只有一次機會，隨時保持專業與整潔。", source: "商務禮儀", tags: ["人際處世", "商業"], date: "2026-08-06", liked: false, dislikes: 0, notes: [] },
+            { id: 98, text: "持續運動不只是為了身體健康，更是為了保持大腦清醒與情緒穩定。", source: "《運動改造大腦》", tags: ["習慣養成", "心靈成長"], date: "2026-08-06", liked: false, dislikes: 0, notes: [] },
+            { id: 99, text: "當你感到猶豫不決時，選擇那條短期看起來更難、但長期效益更大的路。", source: "《納瓦爾寶典》", tags: ["心靈成長", "商業"], date: "2026-08-06", liked: false, dislikes: 0, notes: [] },
+            { id: 100, text: "平靜不是沒有風浪，而是即便身處風浪之中，內心依然沉著鎮定。", source: "心靈修養體悟", tags: ["心靈成長"], date: "2026-08-06", liked: false, dislikes: 0, notes: [] }
         ];
 
         let quotes = [];
@@ -641,7 +734,6 @@
             updateCategoryDropdown();
         }
 
-        /* 初始化並加載系統內建聲音角色 */
         function initVoices() {
             if (!synth) return;
 
@@ -650,7 +742,6 @@
                 const select = document.getElementById('voiceSelect');
                 if (!select) return;
 
-                // 篩選中文/國語/廣東話語音，按性別與音色分類
                 const zhVoices = availableVoices.filter(v => v.lang.includes('zh') || v.lang.includes('cmn') || v.lang.includes('yue'));
 
                 let html = '<option value="DEFAULT">🗣️ 系統預設聲音</option>';
@@ -712,7 +803,6 @@
             }, 1500);
         }
 
-        /* 語音朗讀核心邏輯 */
         function toggleSpeech() {
             if (!synth) {
                 showToast("❌ 您的設備不支援語音朗讀");
@@ -759,7 +849,6 @@
             utterance.lang = 'zh-TW';
             utterance.rate = speechRate;
 
-            // 指定選擇的聲音角色
             if (selectedVoiceURI !== "DEFAULT" && availableVoices.length > 0) {
                 const targetVoice = availableVoices.find(v => v.voiceURI === selectedVoiceURI);
                 if (targetVoice) utterance.voice = targetVoice;
