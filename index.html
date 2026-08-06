@@ -439,6 +439,9 @@
 </head>
 <body>
 
+    <!-- 靜音背景音訊元件（確保鎖屏時 background session 不斷開） -->
+    <audio id="silentAudioAnchor" loop style="display:none;"></audio>
+
     <div class="app-container">
         <div id="toast">提示訊息</div>
 
@@ -575,7 +578,6 @@
     </div>
 
     <script>
-        /* 內建 100 則嚴選高品質金句資料庫 */
         const defaultQuotes = [
             { id: 1, text: "我們重複做的事情，造就了我們；卓越不是一個行為，而是一個習慣。", source: "亞里斯多德", tags: ["習慣養成", "心靈成長"], date: "2026-08-06", liked: false, dislikes: 0, notes: [] },
             { id: 2, text: "如果你找不到一個在你睡覺時還能掙錢的方法，你將會工作到死。", source: "華倫·巴菲特", tags: ["財富自由", "商業"], date: "2026-08-06", liked: false, dislikes: 0, notes: [] },
@@ -652,12 +654,12 @@
             { id: 73, text: "懂得拒絕不重要的邀請，才能對真正重要的人生目標說『YES』。", source: "《精要主義》", tags: ["時間管理", "心靈成長"], date: "2026-08-06", liked: false, dislikes: 0, notes: [] },
             { id: 74, text: "產品賣不出去，通常不是因為價格太高，而是因為顧客沒有感知到價值。", source: "銷售思維", tags: ["商業"], date: "2026-08-06", liked: false, dislikes: 0, notes: [] },
             { id: 75, text: "健康是 1，後面的財富、事業、名利都是 0。沒有了 1，再多的 0 都沒有意義。", source: "養生體悟", tags: ["習慣養成", "心靈成長"], date: "2026-08-06", liked: false, dislikes: 0, notes: [] },
-            { id: 76, text: "抱怨現狀是世上最無用的消耗，去改變能改變的，去接受不能改變的。", source: "斯多葛哲學", tags: ["心靈成長"], date: "2026-08-06", liked: false, dislikes: 0, notes: [] },
+            { id: 76, text: "困擾我們的不是事物本身，而是我們對事物的看法與解釋。", source: "《被討厭的勇氣》", tags: ["心靈成長", "人際處世"], date: "2026-08-06", liked: false, dislikes: 0, notes: [] },
             { id: 77, text: "把每一天都當作人生的最後一天來過，你會發現真正值得珍惜的東西並不多。", source: "史蒂夫·賈伯斯", tags: ["心靈成長", "時間管理"], date: "2026-08-06", liked: false, dislikes: 0, notes: [] },
             { id: 78, text: "複利不只存在於財富，健康、知識與人際關係同樣適用複利效應。", source: "《複利人生》", tags: ["習慣養成", "財富自由"], date: "2026-08-06", liked: false, dislikes: 0, notes: [] },
             { id: 79, text: "好的合作關係是雙贏，企圖單方面占便宜的合作絕對無法長久。", source: "商業談判法則", tags: ["商業", "人際處世"], date: "2026-08-06", liked: false, dislikes: 0, notes: [] },
             { id: 80, text: "傾聽比表達更具力量。聽懂對方的潛台詞，是深層溝通的鑰匙。", source: "《傾聽的藝術》", tags: ["人際處世"], date: "2026-08-06", liked: false, dislikes: 0, notes: [] },
-            { id: 81, text: "定期清理你的房間與手機通訊錄，讓你的生活空間與心靈空間保持清爽。", source: "極簡生活筆記", tags: ["習慣養成", "心靈成長"], date: "2026-08-06", liked: false, dislikes: 0, notes: [] },
+            { id: 81, text: "領先別人的秘密就是開始；而開始的秘密，就是把複雜龐大的任務拆解成小步驟。", source: "馬克·吐溫", tags: ["習慣養成", "時間管理"], date: "2026-08-06", liked: false, dislikes: 0, notes: [] },
             { id: 82, text: "成功需要時間沉澱，急功近利往往只會適得其反。", source: "長期主義", tags: ["習慣養成", "商業"], date: "2026-08-06", liked: false, dislikes: 0, notes: [] },
             { id: 83, text: "不要期待所有人都能理解你，做好你自己，時間會證明一切。", source: "《被討厭的勇氣》", tags: ["人際處世", "心靈成長"], date: "2026-08-06", liked: false, dislikes: 0, notes: [] },
             { id: 84, text: "建立個人的『不為清單』，比建立『待辦清單』更能夠提升效率。", source: "時間管理指南", tags: ["時間管理", "習慣養成"], date: "2026-08-06", liked: false, dislikes: 0, notes: [] },
@@ -699,6 +701,9 @@
         let availableVoices = [];
         let synth = window.speechSynthesis;
 
+        // 靜音音訊 Base64 (0.1秒無音訊，用於鎖住 background session)
+        const silentAudioURI = "data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEARKwAAIhYAQACABAAZGF0YQAAAAA=";
+
         window.onload = function() {
             const saved = localStorage.getItem('my_quotes_data');
             if (saved) {
@@ -729,11 +734,56 @@
             renderCard();
             setupTouchEvents();
             initVoices();
+            setupMediaSessionHandlers();
         };
 
         function saveData() {
             localStorage.setItem('my_quotes_data', JSON.stringify(quotes));
             updateCategoryDropdown();
+        }
+
+        /* 啟動/停止背景靜音音軌 */
+        function playSilentAnchor() {
+            const audio = document.getElementById('silentAudioAnchor');
+            if (audio) {
+                audio.src = silentAudioURI;
+                audio.play().catch(e => console.log('Silent audio play prevented:', e));
+            }
+        }
+
+        function stopSilentAnchor() {
+            const audio = document.getElementById('silentAudioAnchor');
+            if (audio) {
+                audio.pause();
+            }
+        }
+
+        /* 註冊藍牙耳機與手機鎖定畫面的媒體播放器控制 */
+        function setupMediaSessionHandlers() {
+            if ('mediaSession' in navigator) {
+                navigator.mediaSession.setActionHandler('play', () => {
+                    if (!isSpeaking) startSpeech();
+                });
+                navigator.mediaSession.setActionHandler('pause', () => {
+                    if (isSpeaking) stopSpeech();
+                });
+                navigator.mediaSession.setActionHandler('nexttrack', () => {
+                    handleAction('NEXT');
+                });
+                navigator.mediaSession.setActionHandler('previoustrack', () => {
+                    handleAction('NEXT');
+                });
+            }
+        }
+
+        function updateMediaSessionMetadata() {
+            if ('mediaSession' in navigator && currentQuote) {
+                navigator.mediaSession.metadata = new MediaMetadata({
+                    title: currentQuote.text,
+                    artist: currentQuote.source ? `來源：${currentQuote.source}` : '勵志語與知識卡片',
+                    album: '個人語錄庫',
+                });
+            }
         }
 
         function initVoices() {
@@ -825,6 +875,13 @@
             ttsBtn.innerText = "⏹️";
             ttsBtn.classList.add('btn-speaking');
             ttsBtn.title = "停止朗讀";
+            
+            // 播放靜音背景軌道以維持手機背景休眠時繼續發聲
+            playSilentAnchor();
+
+            if ('mediaSession' in navigator) {
+                navigator.mediaSession.playbackState = "playing";
+            }
             speakCurrentQuote();
         }
 
@@ -835,6 +892,12 @@
             ttsBtn.innerText = "🔊";
             ttsBtn.classList.remove('btn-speaking');
             ttsBtn.title = "語音連續朗讀";
+
+            stopSilentAnchor();
+
+            if ('mediaSession' in navigator) {
+                navigator.mediaSession.playbackState = "paused";
+            }
         }
 
         function speakCurrentQuote() {
@@ -846,6 +909,8 @@
             if (currentQuote.source) {
                 readText += `。 來源：${currentQuote.source}`;
             }
+
+            updateMediaSessionMetadata();
 
             const utterance = new SpeechSynthesisUtterance(readText);
             utterance.lang = 'zh-TW';
