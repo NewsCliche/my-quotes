@@ -722,10 +722,12 @@
         let shuffledQueue = [];
         let shuffleIndex = 0;
 
-        // 語音朗讀變數
+        // 語音朗讀變數與防跳針 Timer
         let isSpeaking = false;
         let speechRate = 1.25;
         let synth = window.speechSynthesis;
+        let speakTimer = null;
+        let currentUtterance = null;
 
         window.onload = function() {
             const saved = localStorage.getItem('my_quotes_data');
@@ -852,8 +854,7 @@
 
         function startSpeech() {
             if (!currentQuote) return;
-            if (synth) synth.cancel();
-
+            
             isSpeaking = true;
             const ttsBtn = document.getElementById('ttsBtn');
             ttsBtn.innerText = "⏹️";
@@ -870,6 +871,12 @@
 
         function stopSpeech() {
             isSpeaking = false;
+            
+            if (speakTimer) clearTimeout(speakTimer);
+            if (currentUtterance) {
+                currentUtterance.onend = null;
+                currentUtterance.onerror = null;
+            }
             if (synth) synth.cancel();
 
             const ttsBtn = document.getElementById('ttsBtn');
@@ -884,11 +891,19 @@
             }
         }
 
-        /* 順暢朗讀目前卡片，防跳針機制：強制清空並微幅延遲 */
+        /* 終極防跳針朗讀核心：雙重 Flush 與事件隔離 */
         function speakCurrentQuote(isReset = false) {
             if (!isSpeaking || !currentQuote) return;
 
-            if (synth) synth.cancel(); // 1. 切換卡片時立即強制清空前一段話
+            // 1. 清除舊的計時器與舊的朗讀事件綁定
+            if (speakTimer) clearTimeout(speakTimer);
+            if (currentUtterance) {
+                currentUtterance.onend = null;
+                currentUtterance.onerror = null;
+            }
+
+            // 2. 第一重強制清空佇列
+            if (synth) synth.cancel();
 
             let readText = currentQuote.text;
             if (currentQuote.source) {
@@ -897,32 +912,36 @@
 
             updateMediaSessionMetadata();
 
-            // 2. 微幅延遲 100ms，避開語音引擎佇列衝突導致的跳針/重複
-            setTimeout(() => {
+            // 3. 強制延遲 200ms，等待 Android Chrome 完全釋放硬體 Audio 資源，消除音訊重疊跳針
+            speakTimer = setTimeout(() => {
                 if (!isSpeaking) return;
+
+                // 4. 第二重保險清空
+                if (synth) synth.cancel();
 
                 const utterance = new SpeechSynthesisUtterance(readText);
                 utterance.lang = 'zh-TW';
                 utterance.rate = speechRate;
+                currentUtterance = utterance;
 
                 utterance.onend = function() {
                     if (isSpeaking) {
-                        setTimeout(() => {
+                        speakTimer = setTimeout(() => {
                             renderCard();
                             speakCurrentQuote(false);
-                        }, 500);
+                        }, 400);
                     }
                 };
 
                 utterance.onerror = function(e) {
                     console.log("Speech synthesis info:", e);
                     if (isSpeaking && !isReset) {
-                        setTimeout(() => speakCurrentQuote(false), 500);
+                        speakTimer = setTimeout(() => speakCurrentQuote(false), 500);
                     }
                 };
 
                 synth.speak(utterance);
-            }, 100);
+            }, 200);
         }
 
         function getAllUniqueTags() {
