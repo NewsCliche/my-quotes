@@ -1,13 +1,4 @@
-# Create a standalone, self-contained single HTML file incorporating all requested features:
-# 1. Complete TTS engine built with Web Audio API + SpeechSynthesis Utterance management
-# 2. Reliable Bluetooth Earphone & Lock Screen Control (MediaSession API + Web Audio API Loop Buffer)
-# 3. Voice Selection with Audio Sample Preview ('例句發音')
-# 4. Smooth Voice Switch without Skipping/Stuttering ('換聲音不跳針')
-# 5. Full background playback support (Silent Audio Anchor via Web Audio API AudioBufferSourceNode)
-# 6. Complete default quotes database (102 quotes)
-# 7. Old-eye friendly design with card display, notes, search, filter, export/import.
-
-html_content = '''<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="zh-TW">
 <head>
     <meta charset="UTF-8">
@@ -393,35 +384,6 @@ html_content = '''<!DOCTYPE html>
             border-radius: 8px;
         }
 
-        .voice-select-box {
-            display: flex;
-            gap: 8px;
-            align-items: center;
-            margin-bottom: 15px;
-        }
-
-        .voice-select-box select {
-            flex: 1;
-            font-size: 13pt;
-            padding: 10px;
-            background-color: #2a2a2a;
-            color: #fff;
-            border: 1px solid #555;
-            border-radius: 8px;
-        }
-
-        .voice-test-btn {
-            font-size: 13pt;
-            padding: 10px 14px;
-            background-color: var(--accent-color);
-            color: #121212;
-            font-weight: bold;
-            border: none;
-            border-radius: 8px;
-            cursor: pointer;
-            white-space: nowrap;
-        }
-
         .tag-selector-title {
             font-size: 13pt;
             color: var(--sub-text);
@@ -477,8 +439,8 @@ html_content = '''<!DOCTYPE html>
 </head>
 <body>
 
-    <!-- 靜音背景 HTML5 Audio (用於解鎖 Android/iOS background audio playback session) -->
-    <audio id="silentAudioAnchor" loop style="display:none;" playsinline preload="auto"></audio>
+    <!-- 靜音背景音訊元件 -->
+    <audio id="silentAudioAnchor" loop style="display:none;" playsinline></audio>
 
     <div class="app-container">
         <div id="toast">提示訊息</div>
@@ -581,12 +543,9 @@ html_content = '''<!DOCTYPE html>
             </select>
 
             <label style="display:block; margin: 10px 0; font-weight: bold; color: var(--accent-color);">朗讀聲音角色選擇：</label>
-            <div class="voice-select-box">
-                <select id="voiceSelect" onchange="changeVoice(this.value)">
-                    <option value="DEFAULT">🗣️ 系統預設聲音</option>
-                </select>
-                <button class="voice-test-btn" onclick="testVoiceSample()">▶️ 試聽例句</button>
-            </div>
+            <select id="voiceSelect" onchange="changeVoice(this.value)" style="width:100%; margin-bottom: 15px; font-size:14pt; padding:8px;">
+                <option value="DEFAULT">🗣️ 系統預設聲音</option>
+            </select>
 
             <label style="display:block; margin: 10px 0; font-weight: bold; color: var(--accent-color);">朗讀語速設定：</label>
             <select id="speechRateSelect" onchange="changeSpeechRate(this.value)" style="width:100%; margin-bottom: 15px; font-size:14pt; padding:8px;">
@@ -735,15 +694,15 @@ html_content = '''<!DOCTYPE html>
         let shuffledQueue = [];
         let shuffleIndex = 0;
 
-        // 語音朗讀變數與 Web Audio API
+        // 語音朗讀變數
         let isSpeaking = false;
         let speechRate = 1.25;
         let selectedVoiceURI = "DEFAULT";
         let availableVoices = [];
         let synth = window.speechSynthesis;
-        
-        let audioCtx = null;
-        let silentOscillator = null;
+
+        // 高相容性 PCM 無聲 WAV 音訊，讓 Android 系統鎖住背景播放 Session
+        const silentAudioURI = "data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEARKwAAIhYAQACABAAZGF0YQAAAAA=";
 
         window.onload = function() {
             const saved = localStorage.getItem('my_quotes_data');
@@ -783,50 +742,19 @@ html_content = '''<!DOCTYPE html>
             updateCategoryDropdown();
         }
 
-        /* 透過 Web Audio API 建立無窮無聲音訊流，徹底解鎖系統鎖屏音訊 Session */
-        function enableWebAudioSession() {
-            try {
-                if (!audioCtx) {
-                    const AudioContext = window.AudioContext || window.webkitAudioContext;
-                    if (AudioContext) {
-                        audioCtx = new AudioContext();
-                    }
-                }
-                if (audioCtx && audioCtx.state === 'suspended') {
-                    audioCtx.resume();
-                }
-
-                if (audioCtx && !silentOscillator) {
-                    // 建立無聲震盪器，聲音增益設為 0.0001 (完全無聲)
-                    const osc = audioCtx.createOscillator();
-                    const gain = audioCtx.createGain();
-                    gain.gain.value = 0.0001;
-                    osc.connect(gain);
-                    gain.connect(audioCtx.destination);
-                    osc.start();
-                    silentOscillator = osc;
-                }
-
-                // 同時撥放隱藏 HTML5 Audio 作為雙重保障
-                const audioAnchor = document.getElementById('silentAudioAnchor');
-                if (audioAnchor) {
-                    // 使用標準 0.1s PCM 無聲音軌 Base64
-                    audioAnchor.src = "data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEARKwAAIhYAQACABAAZGF0YQAAAAA=";
-                    audioAnchor.play().catch(e => console.log("Audio anchor play info:", e));
-                }
-            } catch(e) {
-                console.log("Audio session init error:", e);
+        /* 啟動/停止背景靜音音軌 */
+        function playSilentAnchor() {
+            const audio = document.getElementById('silentAudioAnchor');
+            if (audio) {
+                audio.src = silentAudioURI;
+                audio.play().catch(e => console.log('Background Audio Session:', e));
             }
         }
 
-        function disableWebAudioSession() {
-            if (silentOscillator) {
-                try { silentOscillator.stop(); } catch(e){}
-                silentOscillator = null;
-            }
-            const audioAnchor = document.getElementById('silentAudioAnchor');
-            if (audioAnchor) {
-                audioAnchor.pause();
+        function stopSilentAnchor() {
+            const audio = document.getElementById('silentAudioAnchor');
+            if (audio) {
+                audio.pause();
             }
         }
 
@@ -866,50 +794,28 @@ html_content = '''<!DOCTYPE html>
                 const select = document.getElementById('voiceSelect');
                 if (!select) return;
 
-                let html = '<option value="DEFAULT">🗣️ 系統預設聲音 (預設語音)</option>';
+                const zhVoices = availableVoices.filter(v => v.lang.includes('zh') || v.lang.includes('cmn') || v.lang.includes('yue'));
 
-                // 篩選中文/廣東話語音，並修復名稱顯示 (讓 Hans, Danny, Xiaoxiao 等不同發音角色能清晰辨識)
-                const zhVoices = availableVoices.filter(v => 
-                    v.lang.toLowerCase().includes('zh') || 
-                    v.lang.toLowerCase().includes('cmn') || 
-                    v.lang.toLowerCase().includes('yue') ||
-                    v.lang.toLowerCase().includes('cht')
-                );
+                let html = '<option value="DEFAULT">🗣️ 系統預設聲音</option>';
 
-                zhVoices.forEach((v, idx) => {
+                zhVoices.forEach((v) => {
                     let label = v.name;
-                    let countryTag = "";
-
-                    const langLower = v.lang.toLowerCase();
-                    if (langLower.includes('tw') || langLower.includes('cht')) countryTag = "🇹🇼 台灣";
-                    else if (langLower.includes('hk') || langLower.includes('yue')) countryTag = "🇭🇰 香港";
-                    else if (langLower.includes('cn') || langLower.includes('cmn')) countryTag = "🇨🇳 大陸";
-                    else if (langLower.includes('sg')) countryTag = "🇸🇬 新加坡";
-                    else countryTag = `🌐 ${v.lang}`;
-
                     let icon = "🗣️";
+
                     const nameLower = v.name.toLowerCase();
-                    if (nameLower.includes('male') || nameLower.includes('danny') || nameLower.includes('yunxi') || nameLower.includes('yunjian') || nameLower.includes('ken') || nameLower.includes('kangkang')) {
-                        icon = "👨";
-                    } else if (nameLower.includes('female') || nameLower.includes('xiaoxiao') || nameLower.includes('meijia') || nameLower.includes('hanhan') || nameLower.includes('hiujaan') || nameLower.includes('yaoyao')) {
-                        icon = "👩";
-                    } else if (nameLower.includes('hans')) {
-                        icon = "🧔";
+                    if (nameLower.includes('male') || nameLower.includes('danny') || nameLower.includes('yunxi') || nameLower.includes('yunjian') || nameLower.includes('ken')) {
+                        icon = nameLower.includes('young') ? "👦" : "👨";
+                    } else if (nameLower.includes('female') || nameLower.includes('xiaoxiao') || nameLower.includes('meijia') || nameLower.includes('hanhan') || nameLower.includes('hiujaan')) {
+                        icon = nameLower.includes('young') ? "👧" : "👩";
+                    } else if (nameLower.includes('child') || nameLower.includes('kid')) {
+                        icon = "👶";
                     }
 
-                    // 加上索引識別，確保即便同名稱也能準確對應不同語音引擎
-                    html += `<option value="${v.voiceURI}___${idx}">${icon} ${countryTag} - ${label}</option>`;
+                    html += `<option value="${v.voiceURI}">${icon} ${label} (${v.lang})</option>`;
                 });
 
                 select.innerHTML = html;
-
-                // 回填已儲存的角色
-                if (selectedVoiceURI && selectedVoiceURI !== 'DEFAULT') {
-                    const matchedOption = Array.from(select.options).find(opt => opt.value.startsWith(selectedVoiceURI));
-                    if (matchedOption) {
-                        select.value = matchedOption.value;
-                    }
-                }
+                select.value = selectedVoiceURI || 'DEFAULT';
             }
 
             populateVoiceList();
@@ -918,38 +824,11 @@ html_content = '''<!DOCTYPE html>
             }
         }
 
-        /* 試聽選擇的聲音例句 (不干擾主畫面朗讀狀態) */
-        function testVoiceSample() {
-            if (!synth) return;
-            
-            enableWebAudioSession();
-            synth.cancel(); // 停止目前說話
-
-            const val = document.getElementById('voiceSelect').value;
-            const sampleText = "這是一段測試例句，祝您今天擁有美好的一天。";
-            
-            const utterance = new SpeechSynthesisUtterance(sampleText);
-            utterance.lang = 'zh-TW';
-            utterance.rate = speechRate;
-
-            if (val !== "DEFAULT" && availableVoices.length > 0) {
-                const voiceURI = val.split('___')[0];
-                const targetVoice = availableVoices.find(v => v.voiceURI === voiceURI);
-                if (targetVoice) utterance.voice = targetVoice;
-            }
-
-            synth.speak(utterance);
-        }
-
-        function changeVoice(val) {
-            selectedVoiceURI = val.split('___')[0];
-            localStorage.setItem('my_speech_voice', selectedVoiceURI);
-            showToast("🗣️ 朗讀角色已選擇");
-
-            // 如果當前正在主畫面朗讀，順暢切換，不中斷/不跳針
-            if (isSpeaking) {
-                speakCurrentQuote(true); 
-            }
+        function changeVoice(voiceURI) {
+            selectedVoiceURI = voiceURI;
+            localStorage.setItem('my_speech_voice', voiceURI);
+            showToast("🗣️ 朗讀聲音角色已變更");
+            if (isSpeaking) speakCurrentQuote();
         }
 
         function changeDrawMode(mode) {
@@ -964,7 +843,7 @@ html_content = '''<!DOCTYPE html>
             speechRate = parseFloat(rate);
             localStorage.setItem('my_speech_rate', rate);
             showToast(`🔊 朗讀語速調整為 ${rate}x`);
-            if (isSpeaking) speakCurrentQuote(true);
+            if (isSpeaking) speakCurrentQuote();
         }
 
         function showToast(msg) {
@@ -991,19 +870,20 @@ html_content = '''<!DOCTYPE html>
 
         function startSpeech() {
             if (!currentQuote) return;
-            
-            enableWebAudioSession(); // 啟動背景 Audio Session
+            if (synth) synth.cancel(); // 確保清除歷史任務
 
             isSpeaking = true;
             const ttsBtn = document.getElementById('ttsBtn');
             ttsBtn.innerText = "⏹️";
             ttsBtn.classList.add('btn-speaking');
             ttsBtn.title = "停止朗讀";
+            
+            playSilentAnchor();
 
             if ('mediaSession' in navigator) {
                 navigator.mediaSession.playbackState = "playing";
             }
-            speakCurrentQuote(false);
+            speakCurrentQuote();
         }
 
         function stopSpeech() {
@@ -1015,18 +895,17 @@ html_content = '''<!DOCTYPE html>
             ttsBtn.classList.remove('btn-speaking');
             ttsBtn.title = "語音連續朗讀";
 
-            disableWebAudioSession();
+            stopSilentAnchor();
 
             if ('mediaSession' in navigator) {
                 navigator.mediaSession.playbackState = "paused";
             }
         }
 
-        /* 順暢播放當前卡片，isSwitchingVoice 參數確保換聲音時流暢連貫不跳針 */
-        function speakCurrentQuote(isSwitchingVoice = false) {
+        function speakCurrentQuote() {
             if (!isSpeaking || !currentQuote) return;
 
-            synth.cancel(); // 清除前次任務
+            synth.cancel();
 
             let readText = currentQuote.text;
             if (currentQuote.source) {
@@ -1041,25 +920,23 @@ html_content = '''<!DOCTYPE html>
 
             if (selectedVoiceURI !== "DEFAULT" && availableVoices.length > 0) {
                 const targetVoice = availableVoices.find(v => v.voiceURI === selectedVoiceURI);
-                if (targetVoice) {
-                    utterance.voice = targetVoice;
-                    if (targetVoice.lang) utterance.lang = targetVoice.lang;
-                }
+                if (targetVoice) utterance.voice = targetVoice;
             }
 
             utterance.onend = function() {
                 if (isSpeaking) {
                     setTimeout(() => {
                         renderCard();
-                        speakCurrentQuote(false);
-                    }, 500);
+                        speakCurrentQuote();
+                    }, 600);
                 }
             };
 
             utterance.onerror = function(e) {
-                console.log("Speech synthesis info:", e);
-                if (isSpeaking && !isSwitchingVoice) {
-                    setTimeout(() => speakCurrentQuote(false), 500);
+                console.log("TTS Error:", e);
+                // 遇到暫停或中斷時嘗試續播
+                if (isSpeaking) {
+                    setTimeout(() => speakCurrentQuote(), 500);
                 }
             };
 
@@ -1121,7 +998,7 @@ html_content = '''<!DOCTYPE html>
             searchQuery = document.getElementById('searchInput').value.trim().toLowerCase();
             resetShuffleQueue();
             renderCard();
-            if (isSpeaking) speakCurrentQuote(false);
+            if (isSpeaking) speakCurrentQuote();
         }
 
         function clearSearch() {
@@ -1130,7 +1007,7 @@ html_content = '''<!DOCTYPE html>
             document.getElementById('searchBarContainer').style.display = 'none';
             resetShuffleQueue();
             renderCard();
-            if (isSpeaking) speakCurrentQuote(false);
+            if (isSpeaking) speakCurrentQuote();
         }
 
         function getFilteredQuotes() {
@@ -1246,7 +1123,7 @@ html_content = '''<!DOCTYPE html>
         function filterCategory() {
             resetShuffleQueue();
             renderCard();
-            if (isSpeaking) speakCurrentQuote(false);
+            if (isSpeaking) speakCurrentQuote();
         }
 
         function handleAction(type) {
@@ -1276,10 +1153,10 @@ html_content = '''<!DOCTYPE html>
                     showToast(`🌙 已移入沉睡庫 (${currentQuote.dislikes}/5)`);
                 }
                 renderCard();
-                if (isSpeaking) speakCurrentQuote(false);
+                if (isSpeaking) speakCurrentQuote();
             } else if (type === 'NEXT') {
                 renderCard();
-                if (isSpeaking) speakCurrentQuote(false);
+                if (isSpeaking) speakCurrentQuote();
             }
         }
 
@@ -1304,7 +1181,7 @@ html_content = '''<!DOCTYPE html>
                     setTimeout(() => {
                         renderCard();
                         cardWrapper.style.opacity = '1';
-                        if (isSpeaking) speakCurrentQuote(false);
+                        if (isSpeaking) speakCurrentQuote();
                     }, 150);
                 }
             }, { passive: true });
@@ -1405,7 +1282,7 @@ html_content = '''<!DOCTYPE html>
                     resetShuffleQueue();
                     showToast("🗑️ 已成功刪除卡片");
                     renderCard();
-                    if (isSpeaking) speakCurrentQuote(false);
+                    if (isSpeaking) speakCurrentQuote();
                 }
             }
         }
@@ -1600,9 +1477,3 @@ html_content = '''<!DOCTYPE html>
     </script>
 </body>
 </html>
-'''
-
-with open('index.html', 'w', encoding='utf-8') as f:
-    f.write(html_content)
-
-print("Generated index.html with Web Audio API lockscreen fixes and voice sample features.")
