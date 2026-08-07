@@ -1,13 +1,4 @@
-# Create a standalone, self-contained single HTML file incorporating all requested features:
-# 1. Complete TTS engine built with Web Audio API + SpeechSynthesis Utterance management
-# 2. Reliable Bluetooth Earphone & Lock Screen Control (MediaSession API + Web Audio API Loop Buffer)
-# 3. Voice Selection with Audio Sample Preview ('例句發音')
-# 4. Smooth Voice Switch without Skipping/Stuttering ('換聲音不跳針')
-# 5. Full background playback support (Silent Audio Anchor via Web Audio API AudioBufferSourceNode)
-# 6. Complete default quotes database (102 quotes)
-# 7. Old-eye friendly design with card display, notes, search, filter, export/import.
-
-html_content = '''<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="zh-TW">
 <head>
     <meta charset="UTF-8">
@@ -393,14 +384,21 @@ html_content = '''<!DOCTYPE html>
             border-radius: 8px;
         }
 
-        .voice-select-box {
+        /* 聲音選擇排版優化：上下排列防擠壓 */
+        .voice-section-container {
             display: flex;
+            flex-direction: column;
             gap: 8px;
-            align-items: center;
             margin-bottom: 15px;
         }
 
-        .voice-select-box select {
+        .voice-select-row {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+        }
+
+        .voice-select-row select {
             flex: 1;
             font-size: 13pt;
             padding: 10px;
@@ -408,11 +406,12 @@ html_content = '''<!DOCTYPE html>
             color: #fff;
             border: 1px solid #555;
             border-radius: 8px;
+            min-width: 0;
         }
 
         .voice-test-btn {
-            font-size: 13pt;
-            padding: 10px 14px;
+            font-size: 12pt;
+            padding: 10px 12px;
             background-color: var(--accent-color);
             color: #121212;
             font-weight: bold;
@@ -420,6 +419,7 @@ html_content = '''<!DOCTYPE html>
             border-radius: 8px;
             cursor: pointer;
             white-space: nowrap;
+            flex-shrink: 0;
         }
 
         .tag-selector-title {
@@ -477,7 +477,7 @@ html_content = '''<!DOCTYPE html>
 </head>
 <body>
 
-    <!-- 靜音背景 HTML5 Audio (用於解鎖 Android/iOS background audio playback session) -->
+    <!-- 靜音背景軌道，維持背景播放 Session -->
     <audio id="silentAudioAnchor" loop style="display:none;" playsinline preload="auto"></audio>
 
     <div class="app-container">
@@ -580,12 +580,15 @@ html_content = '''<!DOCTYPE html>
                 <option value="SHUFFLE">🃏 洗牌模式 (不重複抽，讀完才洗牌)</option>
             </select>
 
-            <label style="display:block; margin: 10px 0; font-weight: bold; color: var(--accent-color);">朗讀聲音角色選擇：</label>
-            <div class="voice-select-box">
-                <select id="voiceSelect" onchange="changeVoice(this.value)">
-                    <option value="DEFAULT">🗣️ 系統預設聲音</option>
-                </select>
-                <button class="voice-test-btn" onclick="testVoiceSample()">▶️ 試聽例句</button>
+            <label style="display:block; margin: 10px 0; font-weight: bold; color: var(--accent-color);">朗讀聲音選擇：</label>
+            <div class="voice-section-container">
+                <div class="voice-select-row">
+                    <select id="voiceSelect" onchange="changeVoice(this.value)">
+                        <option value="FEMALE">🗣️ 系統預設聲音 (女聲)</option>
+                        <option value="MALE">👨 系統精選聲音 (男聲)</option>
+                    </select>
+                    <button class="voice-test-btn" onclick="testVoiceSample()">▶️ 試聽例句</button>
+                </div>
             </div>
 
             <label style="display:block; margin: 10px 0; font-weight: bold; color: var(--accent-color);">朗讀語速設定：</label>
@@ -735,15 +738,12 @@ html_content = '''<!DOCTYPE html>
         let shuffledQueue = [];
         let shuffleIndex = 0;
 
-        // 語音朗讀變數與 Web Audio API
+        // 語音朗讀變數
         let isSpeaking = false;
         let speechRate = 1.25;
-        let selectedVoiceURI = "DEFAULT";
+        let voiceGenderMode = "FEMALE"; // FEMALE (預設女聲) / MALE (精選男聲)
         let availableVoices = [];
         let synth = window.speechSynthesis;
-        
-        let audioCtx = null;
-        let silentOscillator = null;
 
         window.onload = function() {
             const saved = localStorage.getItem('my_quotes_data');
@@ -766,9 +766,10 @@ html_content = '''<!DOCTYPE html>
                 document.getElementById('speechRateSelect').value = savedRate;
             }
 
-            const savedVoice = localStorage.getItem('my_speech_voice');
-            if (savedVoice) {
-                selectedVoiceURI = savedVoice;
+            const savedGender = localStorage.getItem('my_voice_gender');
+            if (savedGender) {
+                voiceGenderMode = savedGender;
+                document.getElementById('voiceSelect').value = voiceGenderMode;
             }
 
             updateCategoryDropdown();
@@ -776,6 +777,7 @@ html_content = '''<!DOCTYPE html>
             setupTouchEvents();
             initVoices();
             setupMediaSessionHandlers();
+            setupVisibilityWakeup();
         };
 
         function saveData() {
@@ -783,61 +785,39 @@ html_content = '''<!DOCTYPE html>
             updateCategoryDropdown();
         }
 
-        /* 透過 Web Audio API 建立無窮無聲音訊流，徹底解鎖系統鎖屏音訊 Session */
-        function enableWebAudioSession() {
-            try {
-                if (!audioCtx) {
-                    const AudioContext = window.AudioContext || window.webkitAudioContext;
-                    if (AudioContext) {
-                        audioCtx = new AudioContext();
+        /* 背景音訊與藍牙耳機媒體 Session 鎖定 */
+        function playSilentAnchor() {
+            const audio = document.getElementById('silentAudioAnchor');
+            if (audio) {
+                audio.src = "data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEARKwAAIhYAQACABAAZGF0YQAAAAA=";
+                audio.play().catch(e => console.log('Audio session info:', e));
+            }
+        }
+
+        function stopSilentAnchor() {
+            const audio = document.getElementById('silentAudioAnchor');
+            if (audio) audio.pause();
+        }
+
+        /* 頁面切換或亮屏喚醒機制，防止背景被中斷後死機 */
+        function setupVisibilityWakeup() {
+            document.addEventListener('visibilitychange', () => {
+                if (document.visibilityState === 'visible' && isSpeaking) {
+                    if (synth && !synth.speaking) {
+                        speakCurrentQuote(false);
                     }
                 }
-                if (audioCtx && audioCtx.state === 'suspended') {
-                    audioCtx.resume();
-                }
-
-                if (audioCtx && !silentOscillator) {
-                    // 建立無聲震盪器，聲音增益設為 0.0001 (完全無聲)
-                    const osc = audioCtx.createOscillator();
-                    const gain = audioCtx.createGain();
-                    gain.gain.value = 0.0001;
-                    osc.connect(gain);
-                    gain.connect(audioCtx.destination);
-                    osc.start();
-                    silentOscillator = osc;
-                }
-
-                // 同時撥放隱藏 HTML5 Audio 作為雙重保障
-                const audioAnchor = document.getElementById('silentAudioAnchor');
-                if (audioAnchor) {
-                    // 使用標準 0.1s PCM 無聲音軌 Base64
-                    audioAnchor.src = "data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEARKwAAIhYAQACABAAZGF0YQAAAAA=";
-                    audioAnchor.play().catch(e => console.log("Audio anchor play info:", e));
-                }
-            } catch(e) {
-                console.log("Audio session init error:", e);
-            }
+            });
         }
 
-        function disableWebAudioSession() {
-            if (silentOscillator) {
-                try { silentOscillator.stop(); } catch(e){}
-                silentOscillator = null;
-            }
-            const audioAnchor = document.getElementById('silentAudioAnchor');
-            if (audioAnchor) {
-                audioAnchor.pause();
-            }
-        }
-
-        /* 註冊藍牙耳機與手機鎖定畫面的媒體播放器控制 */
+        /* 藍牙耳機按鈕註冊 */
         function setupMediaSessionHandlers() {
             if ('mediaSession' in navigator) {
                 navigator.mediaSession.setActionHandler('play', () => {
-                    startSpeech();
+                    if (!isSpeaking) startSpeech();
                 });
                 navigator.mediaSession.setActionHandler('pause', () => {
-                    stopSpeech();
+                    if (isSpeaking) stopSpeech();
                 });
                 navigator.mediaSession.setActionHandler('nexttrack', () => {
                     handleAction('NEXT');
@@ -863,53 +843,6 @@ html_content = '''<!DOCTYPE html>
 
             function populateVoiceList() {
                 availableVoices = synth.getVoices();
-                const select = document.getElementById('voiceSelect');
-                if (!select) return;
-
-                let html = '<option value="DEFAULT">🗣️ 系統預設聲音 (預設語音)</option>';
-
-                // 篩選中文/廣東話語音，並修復名稱顯示 (讓 Hans, Danny, Xiaoxiao 等不同發音角色能清晰辨識)
-                const zhVoices = availableVoices.filter(v => 
-                    v.lang.toLowerCase().includes('zh') || 
-                    v.lang.toLowerCase().includes('cmn') || 
-                    v.lang.toLowerCase().includes('yue') ||
-                    v.lang.toLowerCase().includes('cht')
-                );
-
-                zhVoices.forEach((v, idx) => {
-                    let label = v.name;
-                    let countryTag = "";
-
-                    const langLower = v.lang.toLowerCase();
-                    if (langLower.includes('tw') || langLower.includes('cht')) countryTag = "🇹🇼 台灣";
-                    else if (langLower.includes('hk') || langLower.includes('yue')) countryTag = "🇭🇰 香港";
-                    else if (langLower.includes('cn') || langLower.includes('cmn')) countryTag = "🇨🇳 大陸";
-                    else if (langLower.includes('sg')) countryTag = "🇸🇬 新加坡";
-                    else countryTag = `🌐 ${v.lang}`;
-
-                    let icon = "🗣️";
-                    const nameLower = v.name.toLowerCase();
-                    if (nameLower.includes('male') || nameLower.includes('danny') || nameLower.includes('yunxi') || nameLower.includes('yunjian') || nameLower.includes('ken') || nameLower.includes('kangkang')) {
-                        icon = "👨";
-                    } else if (nameLower.includes('female') || nameLower.includes('xiaoxiao') || nameLower.includes('meijia') || nameLower.includes('hanhan') || nameLower.includes('hiujaan') || nameLower.includes('yaoyao')) {
-                        icon = "👩";
-                    } else if (nameLower.includes('hans')) {
-                        icon = "🧔";
-                    }
-
-                    // 加上索引識別，確保即便同名稱也能準確對應不同語音引擎
-                    html += `<option value="${v.voiceURI}___${idx}">${icon} ${countryTag} - ${label}</option>`;
-                });
-
-                select.innerHTML = html;
-
-                // 回填已儲存的角色
-                if (selectedVoiceURI && selectedVoiceURI !== 'DEFAULT') {
-                    const matchedOption = Array.from(select.options).find(opt => opt.value.startsWith(selectedVoiceURI));
-                    if (matchedOption) {
-                        select.value = matchedOption.value;
-                    }
-                }
             }
 
             populateVoiceList();
@@ -918,37 +851,71 @@ html_content = '''<!DOCTYPE html>
             }
         }
 
-        /* 試聽選擇的聲音例句 (不干擾主畫面朗讀狀態) */
+        /* 取得比對最佳語音角色 (女聲/男聲) */
+        function getSelectedVoice() {
+            if (!availableVoices || availableVoices.length === 0) return null;
+
+            const zhVoices = availableVoices.filter(v => 
+                v.lang.toLowerCase().includes('zh') || 
+                v.lang.toLowerCase().includes('cmn') || 
+                v.lang.toLowerCase().includes('yue')
+            );
+
+            if (zhVoices.length === 0) return null;
+
+            if (voiceGenderMode === "MALE") {
+                // 尋找常見男聲關鍵字
+                const maleVoice = zhVoices.find(v => {
+                    const name = v.name.toLowerCase();
+                    return name.includes('male') || name.includes('danny') || name.includes('yunxi') || 
+                           name.includes('yunjian') || name.includes('ken') || name.includes('kangkang');
+                });
+                if (maleVoice) return maleVoice;
+            }
+
+            // 預設繁體/女聲
+            const twVoice = zhVoices.find(v => v.lang.toLowerCase().includes('tw') || v.lang.toLowerCase().includes('cht'));
+            return twVoice || zhVoices[0];
+        }
+
+        /* 試聽選擇的聲音例句 */
         function testVoiceSample() {
             if (!synth) return;
             
-            enableWebAudioSession();
-            synth.cancel(); // 停止目前說話
+            playSilentAnchor();
+            synth.cancel();
 
-            const val = document.getElementById('voiceSelect').value;
-            const sampleText = "這是一段測試例句，祝您今天擁有美好的一天。";
+            const sampleText = voiceGenderMode === "MALE" 
+                ? "您好，這是精選男聲試聽，祝您今天擁有美好的一天。" 
+                : "您好，這是預設女聲試聽，祝您今天擁有美好的一天。";
             
             const utterance = new SpeechSynthesisUtterance(sampleText);
             utterance.lang = 'zh-TW';
             utterance.rate = speechRate;
 
-            if (val !== "DEFAULT" && availableVoices.length > 0) {
-                const voiceURI = val.split('___')[0];
-                const targetVoice = availableVoices.find(v => v.voiceURI === voiceURI);
-                if (targetVoice) utterance.voice = targetVoice;
+            const targetVoice = getSelectedVoice();
+            if (targetVoice) {
+                utterance.voice = targetVoice;
+                if (targetVoice.lang) utterance.lang = targetVoice.lang;
+            }
+
+            // 男聲降調處理 (如果系統找不到專屬男聲引擎，自動調節 Pitch)
+            if (voiceGenderMode === "MALE" && targetVoice && !targetVoice.name.toLowerCase().includes('male')) {
+                utterance.pitch = 0.8;
+            } else {
+                utterance.pitch = 1.0;
             }
 
             synth.speak(utterance);
         }
 
         function changeVoice(val) {
-            selectedVoiceURI = val.split('___')[0];
-            localStorage.setItem('my_speech_voice', selectedVoiceURI);
-            showToast("🗣️ 朗讀角色已選擇");
+            voiceGenderMode = val;
+            localStorage.setItem('my_voice_gender', voiceGenderMode);
+            showToast(val === "MALE" ? "👨 已切換為精選男聲" : "🗣️ 已切換為預設女聲");
 
-            // 如果當前正在主畫面朗讀，順暢切換，不中斷/不跳針
             if (isSpeaking) {
-                speakCurrentQuote(true); 
+                speakCurrentQuote(true);
             }
         }
 
@@ -991,14 +958,15 @@ html_content = '''<!DOCTYPE html>
 
         function startSpeech() {
             if (!currentQuote) return;
-            
-            enableWebAudioSession(); // 啟動背景 Audio Session
+            if (synth) synth.cancel();
 
             isSpeaking = true;
             const ttsBtn = document.getElementById('ttsBtn');
             ttsBtn.innerText = "⏹️";
             ttsBtn.classList.add('btn-speaking');
             ttsBtn.title = "停止朗讀";
+
+            playSilentAnchor();
 
             if ('mediaSession' in navigator) {
                 navigator.mediaSession.playbackState = "playing";
@@ -1015,18 +983,17 @@ html_content = '''<!DOCTYPE html>
             ttsBtn.classList.remove('btn-speaking');
             ttsBtn.title = "語音連續朗讀";
 
-            disableWebAudioSession();
+            stopSilentAnchor();
 
             if ('mediaSession' in navigator) {
                 navigator.mediaSession.playbackState = "paused";
             }
         }
 
-        /* 順暢播放當前卡片，isSwitchingVoice 參數確保換聲音時流暢連貫不跳針 */
         function speakCurrentQuote(isSwitchingVoice = false) {
             if (!isSpeaking || !currentQuote) return;
 
-            synth.cancel(); // 清除前次任務
+            synth.cancel();
 
             let readText = currentQuote.text;
             if (currentQuote.source) {
@@ -1039,12 +1006,16 @@ html_content = '''<!DOCTYPE html>
             utterance.lang = 'zh-TW';
             utterance.rate = speechRate;
 
-            if (selectedVoiceURI !== "DEFAULT" && availableVoices.length > 0) {
-                const targetVoice = availableVoices.find(v => v.voiceURI === selectedVoiceURI);
-                if (targetVoice) {
-                    utterance.voice = targetVoice;
-                    if (targetVoice.lang) utterance.lang = targetVoice.lang;
-                }
+            const targetVoice = getSelectedVoice();
+            if (targetVoice) {
+                utterance.voice = targetVoice;
+                if (targetVoice.lang) utterance.lang = targetVoice.lang;
+            }
+
+            if (voiceGenderMode === "MALE" && targetVoice && !targetVoice.name.toLowerCase().includes('male')) {
+                utterance.pitch = 0.8;
+            } else {
+                utterance.pitch = 1.0;
             }
 
             utterance.onend = function() {
@@ -1600,9 +1571,3 @@ html_content = '''<!DOCTYPE html>
     </script>
 </body>
 </html>
-'''
-
-with open('index.html', 'w', encoding='utf-8') as f:
-    f.write(html_content)
-
-print("Generated index.html with Web Audio API lockscreen fixes and voice sample features.")
