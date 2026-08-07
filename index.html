@@ -400,7 +400,7 @@
 
         .voice-select-row select {
             flex: 1;
-            font-size: 13pt;
+            font-size: 12pt;
             padding: 10px;
             background-color: #2a2a2a;
             color: #fff;
@@ -580,12 +580,11 @@
                 <option value="SHUFFLE">🃏 洗牌模式 (不重複抽，讀完才洗牌)</option>
             </select>
 
-            <label style="display:block; margin: 10px 0; font-weight: bold; color: var(--accent-color);">朗讀聲音選擇：</label>
+            <label style="display:block; margin: 10px 0; font-weight: bold; color: var(--accent-color);">朗讀聲音綁定 (列出手機內所有語音包)：</label>
             <div class="voice-section-container">
                 <div class="voice-select-row">
                     <select id="voiceSelect" onchange="changeVoice(this.value)">
-                        <option value="FEMALE">🗣️ 系統預設聲音 (女聲)</option>
-                        <option value="MALE">👨 系統精選聲音 (男聲)</option>
+                        <option value="DEFAULT">🗣️ 系統預設語音</option>
                     </select>
                     <button class="voice-test-btn" onclick="testVoiceSample()">▶️ 試聽例句</button>
                 </div>
@@ -738,10 +737,10 @@
         let shuffledQueue = [];
         let shuffleIndex = 0;
 
-        // 語音朗讀變數
+        // 語音朗讀變數與 Web Audio API
         let isSpeaking = false;
         let speechRate = 1.25;
-        let voiceGenderMode = "FEMALE"; // FEMALE (預設女聲) / MALE (精選男聲)
+        let selectedVoiceURI = "DEFAULT";
         let availableVoices = [];
         let synth = window.speechSynthesis;
 
@@ -766,10 +765,9 @@
                 document.getElementById('speechRateSelect').value = savedRate;
             }
 
-            const savedGender = localStorage.getItem('my_voice_gender');
-            if (savedGender) {
-                voiceGenderMode = savedGender;
-                document.getElementById('voiceSelect').value = voiceGenderMode;
+            const savedVoice = localStorage.getItem('my_speech_voice');
+            if (savedVoice) {
+                selectedVoiceURI = savedVoice;
             }
 
             updateCategoryDropdown();
@@ -785,7 +783,7 @@
             updateCategoryDropdown();
         }
 
-        /* 背景音訊與藍牙耳機媒體 Session 鎖定 */
+        /* 鎖定手機背景 Session */
         function playSilentAnchor() {
             const audio = document.getElementById('silentAudioAnchor');
             if (audio) {
@@ -838,44 +836,55 @@
             }
         }
 
+        /* 抓取手機內安裝的所有語音包並精準列出 */
         function initVoices() {
             if (!synth) return;
 
             function populateVoiceList() {
                 availableVoices = synth.getVoices();
+                const select = document.getElementById('voiceSelect');
+                if (!select) return;
+
+                let html = '<option value="DEFAULT">🗣️ 系統預設語音</option>';
+
+                // 篩選中文/廣東話語音，完全列出名稱與識別碼，解決選擇混亂問題
+                const zhVoices = availableVoices.filter(v => 
+                    v.lang.toLowerCase().includes('zh') || 
+                    v.lang.toLowerCase().includes('cmn') || 
+                    v.lang.toLowerCase().includes('yue') ||
+                    v.lang.toLowerCase().includes('cht')
+                );
+
+                zhVoices.forEach((v) => {
+                    let countryTag = "";
+                    const langLower = v.lang.toLowerCase();
+                    if (langLower.includes('tw') || langLower.includes('cht')) countryTag = "🇹🇼 台灣";
+                    else if (langLower.includes('hk') || langLower.includes('yue')) countryTag = "🇭🇰 香港";
+                    else if (langLower.includes('cn') || langLower.includes('cmn')) countryTag = "🇨🇳 大陸";
+                    else countryTag = `🌐 ${v.lang}`;
+
+                    let icon = "🗣️";
+                    const nameLower = v.name.toLowerCase();
+                    if (nameLower.includes('male') || nameLower.includes('danny') || nameLower.includes('yunxi') || nameLower.includes('yunjian') || nameLower.includes('ken') || nameLower.includes('kangkang')) {
+                        icon = "👨";
+                    } else if (nameLower.includes('female') || nameLower.includes('xiaoxiao') || nameLower.includes('meijia') || nameLower.includes('hanhan') || nameLower.includes('hiujaan')) {
+                        icon = "👩";
+                    }
+
+                    html += `<option value="${v.voiceURI}">${icon} ${countryTag} - ${v.name}</option>`;
+                });
+
+                select.innerHTML = html;
+
+                if (selectedVoiceURI && selectedVoiceURI !== 'DEFAULT') {
+                    select.value = selectedVoiceURI;
+                }
             }
 
             populateVoiceList();
             if (speechSynthesis.onvoiceschanged !== undefined) {
                 speechSynthesis.onvoiceschanged = populateVoiceList;
             }
-        }
-
-        /* 取得比對最佳語音角色 (女聲/男聲) */
-        function getSelectedVoice() {
-            if (!availableVoices || availableVoices.length === 0) return null;
-
-            const zhVoices = availableVoices.filter(v => 
-                v.lang.toLowerCase().includes('zh') || 
-                v.lang.toLowerCase().includes('cmn') || 
-                v.lang.toLowerCase().includes('yue')
-            );
-
-            if (zhVoices.length === 0) return null;
-
-            if (voiceGenderMode === "MALE") {
-                // 尋找常見男聲關鍵字
-                const maleVoice = zhVoices.find(v => {
-                    const name = v.name.toLowerCase();
-                    return name.includes('male') || name.includes('danny') || name.includes('yunxi') || 
-                           name.includes('yunjian') || name.includes('ken') || name.includes('kangkang');
-                });
-                if (maleVoice) return maleVoice;
-            }
-
-            // 預設繁體/女聲
-            const twVoice = zhVoices.find(v => v.lang.toLowerCase().includes('tw') || v.lang.toLowerCase().includes('cht'));
-            return twVoice || zhVoices[0];
         }
 
         /* 試聽選擇的聲音例句 */
@@ -885,34 +894,28 @@
             playSilentAnchor();
             synth.cancel();
 
-            const sampleText = voiceGenderMode === "MALE" 
-                ? "您好，這是精選男聲試聽，祝您今天擁有美好的一天。" 
-                : "您好，這是預設女聲試聽，祝您今天擁有美好的一天。";
+            const sampleText = "您好，這是一段測試例句，祝您今天擁有美好的一天。";
             
             const utterance = new SpeechSynthesisUtterance(sampleText);
             utterance.lang = 'zh-TW';
             utterance.rate = speechRate;
 
-            const targetVoice = getSelectedVoice();
-            if (targetVoice) {
-                utterance.voice = targetVoice;
-                if (targetVoice.lang) utterance.lang = targetVoice.lang;
-            }
-
-            // 男聲降調處理 (如果系統找不到專屬男聲引擎，自動調節 Pitch)
-            if (voiceGenderMode === "MALE" && targetVoice && !targetVoice.name.toLowerCase().includes('male')) {
-                utterance.pitch = 0.8;
-            } else {
-                utterance.pitch = 1.0;
+            const selectedURI = document.getElementById('voiceSelect').value;
+            if (selectedURI !== "DEFAULT" && availableVoices.length > 0) {
+                const targetVoice = availableVoices.find(v => v.voiceURI === selectedURI);
+                if (targetVoice) {
+                    utterance.voice = targetVoice;
+                    if (targetVoice.lang) utterance.lang = targetVoice.lang;
+                }
             }
 
             synth.speak(utterance);
         }
 
         function changeVoice(val) {
-            voiceGenderMode = val;
-            localStorage.setItem('my_voice_gender', voiceGenderMode);
-            showToast(val === "MALE" ? "👨 已切換為精選男聲" : "🗣️ 已切換為預設女聲");
+            selectedVoiceURI = val;
+            localStorage.setItem('my_speech_voice', selectedVoiceURI);
+            showToast("🗣️ 已鎖定選取語音包");
 
             if (isSpeaking) {
                 speakCurrentQuote(true);
@@ -1006,16 +1009,12 @@
             utterance.lang = 'zh-TW';
             utterance.rate = speechRate;
 
-            const targetVoice = getSelectedVoice();
-            if (targetVoice) {
-                utterance.voice = targetVoice;
-                if (targetVoice.lang) utterance.lang = targetVoice.lang;
-            }
-
-            if (voiceGenderMode === "MALE" && targetVoice && !targetVoice.name.toLowerCase().includes('male')) {
-                utterance.pitch = 0.8;
-            } else {
-                utterance.pitch = 1.0;
+            if (selectedVoiceURI !== "DEFAULT" && availableVoices.length > 0) {
+                const targetVoice = availableVoices.find(v => v.voiceURI === selectedVoiceURI);
+                if (targetVoice) {
+                    utterance.voice = targetVoice;
+                    if (targetVoice.lang) utterance.lang = targetVoice.lang;
+                }
             }
 
             utterance.onend = function() {
