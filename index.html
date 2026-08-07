@@ -884,10 +884,11 @@
             }
         }
 
-        function speakCurrentQuote(isSwitchingVoice = false) {
+        /* 順暢朗讀目前卡片，防跳針機制：強制清空並微幅延遲 */
+        function speakCurrentQuote(isReset = false) {
             if (!isSpeaking || !currentQuote) return;
 
-            synth.cancel();
+            if (synth) synth.cancel(); // 1. 切換卡片時立即強制清空前一段話
 
             let readText = currentQuote.text;
             if (currentQuote.source) {
@@ -896,27 +897,32 @@
 
             updateMediaSessionMetadata();
 
-            const utterance = new SpeechSynthesisUtterance(readText);
-            utterance.lang = 'zh-TW';
-            utterance.rate = speechRate;
+            // 2. 微幅延遲 100ms，避開語音引擎佇列衝突導致的跳針/重複
+            setTimeout(() => {
+                if (!isSpeaking) return;
 
-            utterance.onend = function() {
-                if (isSpeaking) {
-                    setTimeout(() => {
-                        renderCard();
-                        speakCurrentQuote(false);
-                    }, 500);
-                }
-            };
+                const utterance = new SpeechSynthesisUtterance(readText);
+                utterance.lang = 'zh-TW';
+                utterance.rate = speechRate;
 
-            utterance.onerror = function(e) {
-                console.log("Speech synthesis info:", e);
-                if (isSpeaking && !isSwitchingVoice) {
-                    setTimeout(() => speakCurrentQuote(false), 500);
-                }
-            };
+                utterance.onend = function() {
+                    if (isSpeaking) {
+                        setTimeout(() => {
+                            renderCard();
+                            speakCurrentQuote(false);
+                        }, 500);
+                    }
+                };
 
-            synth.speak(utterance);
+                utterance.onerror = function(e) {
+                    console.log("Speech synthesis info:", e);
+                    if (isSpeaking && !isReset) {
+                        setTimeout(() => speakCurrentQuote(false), 500);
+                    }
+                };
+
+                synth.speak(utterance);
+            }, 100);
         }
 
         function getAllUniqueTags() {
