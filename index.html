@@ -585,13 +585,19 @@
             </select>
 
             <hr style="margin: 20px 0; border-color: #444;">
-            <h3 style="color:var(--accent-color); margin-bottom:10px;">資料安全備份</h3>
-            <button onclick="exportJSON()" style="width:100%; margin-bottom:10px; font-size:14pt; padding:10px;">📥 匯出 JSON 完整備份檔</button>
-            <button onclick="exportTXT()" style="width:100%; margin-bottom:10px; font-size:14pt; padding:10px;">📄 匯出 TXT 文字檔 (防亂碼版)</button>
+            <h3 style="color:var(--accent-color); margin-bottom:10px;">資料匯出與批次管理</h3>
             
-            <label style="display:block; margin: 10px 0; font-weight: bold; color: var(--accent-color);">匯入 / 智慧合併 JSON 檔：</label>
-            <p style="font-size: 11pt; color: #aaa; margin-bottom: 8px;">系統會自動比對並保留您現有語錄的心得與按讚紀錄。</p>
-            <input type="file" id="importFile" accept=".json" onchange="importJSON(event)">
+            <button onclick="exportJSON()" style="width:100%; margin-bottom:10px; font-size:14pt; padding:10px;">📥 匯出 JSON 完整系統備份檔</button>
+            <button onclick="exportCSV()" style="width:100%; margin-bottom:10px; font-size:14pt; padding:10px; background-color:#2e7d32; color:#fff; border:none; border-radius:8px; font-weight:bold; cursor:pointer;">📊 匯出 CSV 試算表檔 (Excel/Google 試算表可開)</button>
+            
+            <hr style="margin: 15px 0; border-color: #333;">
+
+            <label style="display:block; margin: 10px 0; font-weight: bold; color: var(--accent-color);">匯入 / 智慧合併 JSON 備份檔：</label>
+            <input type="file" id="importFile" accept=".json" onchange="importJSON(event)" style="margin-bottom: 15px;">
+
+            <label style="display:block; margin: 10px 0; font-weight: bold; color: var(--accent-color);">批次匯入 CSV 試算表檔：</label>
+            <p style="font-size: 11pt; color: #aaa; margin-bottom: 8px;">可在 Excel 編輯，欄位順序：語錄內文, 來源, 標籤 (逗號隔開)</p>
+            <input type="file" id="importCSVFile" accept=".csv" onchange="importCSV(event)">
 
             <div class="modal-buttons" style="margin-top: 20px;">
                 <button onclick="closeModal('settingsModal')">關閉</button>
@@ -1356,6 +1362,7 @@
             document.documentElement.style.setProperty('--font-size', size);
         }
 
+        /* 匯出全系統 JSON 備份檔 */
         function exportJSON() {
             const jsonString = JSON.stringify(quotes, null, 2);
             const blob = new Blob(["\uFEFF" + jsonString], { type: "application/json;charset=utf-8" });
@@ -1368,78 +1375,168 @@
             URL.revokeObjectURL(url);
         }
 
-        function exportTXT() {
-            let txtContent = "=== 我的勵志語與讀書筆記備份 ===\n\n";
-            quotes.forEach((q, i) => {
-                txtContent += `${i+1}. ${q.text}\n`;
-                if(q.source) txtContent += `   來源：${q.source}\n`;
-                txtContent += `   標籤：${q.tags.join(', ')} | 日期：${q.date}\n`;
-                if(q.notes && q.notes.length > 0) {
-                    txtContent += `   心得註解：\n`;
-                    q.notes.forEach(n => txtContent += `     - [${n.timestamp}] ${n.content}\n`);
-                }
-                txtContent += `\n-----------------------------------\n\n`;
+        /* 匯出 Excel / 試算表可開啟的 CSV 檔 */
+        function exportCSV() {
+            let csvContent = "語錄內文,來源,標籤,新增日期\n";
+            
+            quotes.forEach(q => {
+                const textStr = `"${(q.text || '').replace(/"/g, '""')}"`;
+                const sourceStr = `"${(q.source || '').replace(/"/g, '""')}"`;
+                const tagsStr = `"${(q.tags || []).join('; ').replace(/"/g, '""')}"`;
+                const dateStr = `"${q.date || ''}"`;
+                csvContent += `${textStr},${sourceStr},${tagsStr},${dateStr}\n`;
             });
 
-            const blob = new Blob(["\uFEFF" + txtContent], { type: "text/plain;charset=utf-8" });
+            const blob = new Blob(["\uFEFF" + csvContent], { type: "text/csv;charset=utf-8" });
             const url = URL.createObjectURL(blob);
 
             const dlAnchor = document.createElement('a');
             dlAnchor.href = url;
-            dlAnchor.download = `quotes_readable_${new Date().toISOString().split('T')[0]}.txt`;
+            dlAnchor.download = `quotes_excel_${new Date().toISOString().split('T')[0]}.csv`;
             dlAnchor.click();
             URL.revokeObjectURL(url);
         }
 
+        /* 匯入 / 合併 JSON */
         function importJSON(event) {
             const reader = new FileReader();
             reader.onload = function(e) {
                 try {
                     let text = e.target.result;
-                    if (text.startsWith('\uFEFF')) {
-                        text = text.slice(1);
-                    }
+                    if (text.startsWith('\uFEFF')) text = text.slice(1);
                     const imported = JSON.parse(text);
                     if (Array.isArray(imported)) {
-                        const existingMap = new Map();
-                        quotes.forEach(q => {
-                            if (q.text) existingMap.set(q.text.trim(), q);
-                        });
-
-                        let mergedCount = 0;
-                        let newAddedCount = 0;
-
-                        imported.forEach(impQ => {
-                            if (!impQ.text) return;
-                            const cleanText = impQ.text.trim();
-
-                            if (existingMap.has(cleanText)) {
-                                const oldQ = existingMap.get(cleanText);
-                                const mergedTags = new Set([...(oldQ.tags || []), ...(impQ.tags || [])]);
-                                oldQ.tags = Array.from(mergedTags);
-                                if (!oldQ.source && impQ.source) oldQ.source = impQ.source;
-                                mergedCount++;
-                            } else {
-                                if (!impQ.id) impQ.id = Date.now() + Math.random();
-                                if (!impQ.notes) impQ.notes = [];
-                                quotes.push(impQ);
-                                newAddedCount++;
-                            }
-                        });
-
-                        saveData();
-                        resetShuffleQueue();
-                        showToast(`✅ 成功合併！(新增 ${newAddedCount} 則，整合 ${mergedCount} 則)`);
-                        renderCard();
-                        closeModal('settingsModal');
+                        processImportedQuotes(imported);
                     } else {
-                        showToast('❌ 檔案格式不正確');
+                        showToast('❌ JSON 檔案格式不正確');
                     }
                 } catch(err) {
                     showToast('❌ 解析 JSON 檔案失敗');
                 }
             };
             reader.readAsText(event.target.files[0]);
+        }
+
+        /* 匯入 / 批次解析 CSV (支援 Excel 匯出格式) */
+        function importCSV(event) {
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    let text = e.target.result;
+                    if (text.startsWith('\uFEFF')) text = text.slice(1);
+                    
+                    const lines = parseCSVLines(text);
+                    if (lines.length < 2) {
+                        showToast('❌ CSV 檔案無有效資料');
+                        return;
+                    }
+
+                    const importedQuotes = [];
+                    const today = new Date().toISOString().split('T')[0];
+
+                    // 跳過第一行標頭 (Header)
+                    for (let i = 1; i < lines.length; i++) {
+                        const row = lines[i];
+                        if (!row || row.length === 0 || !row[0].trim()) continue;
+
+                        const qText = row[0].trim();
+                        const qSource = row[1] ? row[1].trim() : "";
+                        const qTagsRaw = row[2] ? row[2].trim() : "一般";
+                        const qDate = row[3] && row[3].trim() ? row[3].trim() : today;
+
+                        const qTags = qTagsRaw.split(/[;,；，]/).map(t => t.trim()).filter(t => t);
+
+                        importedQuotes.push({
+                            id: Date.now() + Math.random(),
+                            text: qText,
+                            source: qSource,
+                            tags: qTags.length > 0 ? qTags : ["一般"],
+                            date: qDate,
+                            liked: false,
+                            dislikes: 0,
+                            notes: []
+                        });
+                    }
+
+                    processImportedQuotes(importedQuotes);
+                } catch(err) {
+                    showToast('❌ 解析 CSV 檔案失敗');
+                }
+            };
+            reader.readAsText(event.target.files[0]);
+        }
+
+        /* 簡單高相容性的 CSV 逐行解析器 (相容雙引號與換行) */
+        function parseCSVLines(text) {
+            const result = [];
+            let row = [];
+            let inQuotes = false;
+            let currentStr = "";
+
+            for (let i = 0; i < text.length; i++) {
+                const char = text[i];
+                const nextChar = text[i+1];
+
+                if (char === '"') {
+                    if (inQuotes && nextChar === '"') {
+                        currentStr += '"';
+                        i++;
+                    } else {
+                        inQuotes = !inQuotes;
+                    }
+                } else if (char === ',' && !inQuotes) {
+                    row.push(currentStr);
+                    currentStr = "";
+                } else if ((char === '\r' || char === '\n') && !inQuotes) {
+                    if (char === '\r' && nextChar === '\n') i++;
+                    row.push(currentStr);
+                    result.push(row);
+                    row = [];
+                    currentStr = "";
+                } else {
+                    currentStr += char;
+                }
+            }
+            if (currentStr || row.length > 0) {
+                row.push(currentStr);
+                result.push(row);
+            }
+            return result;
+        }
+
+        /* 處理匯入資料之智慧合併 */
+        function processImportedQuotes(importedList) {
+            const existingMap = new Map();
+            quotes.forEach(q => {
+                if (q.text) existingMap.set(q.text.trim(), q);
+            });
+
+            let mergedCount = 0;
+            let newAddedCount = 0;
+
+            importedList.forEach(impQ => {
+                if (!impQ.text) return;
+                const cleanText = impQ.text.trim();
+
+                if (existingMap.has(cleanText)) {
+                    const oldQ = existingMap.get(cleanText);
+                    const mergedTags = new Set([...(oldQ.tags || []), ...(impQ.tags || [])]);
+                    oldQ.tags = Array.from(mergedTags);
+                    if (!oldQ.source && impQ.source) oldQ.source = impQ.source;
+                    mergedCount++;
+                } else {
+                    if (!impQ.id) impQ.id = Date.now() + Math.random();
+                    if (!impQ.notes) impQ.notes = [];
+                    quotes.push(impQ);
+                    newAddedCount++;
+                }
+            });
+
+            saveData();
+            resetShuffleQueue();
+            showToast(`✅ 匯入成功！(新增 ${newAddedCount} 則，整合 ${mergedCount} 則)`);
+            renderCard();
+            closeModal('settingsModal');
         }
 
         function openModal(id) { document.getElementById(id).style.display = 'block'; }
