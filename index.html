@@ -384,42 +384,21 @@
             border-radius: 8px;
         }
 
-        /* 聲音選擇排版優化：上下排列防擠壓 */
-        .voice-section-container {
-            display: flex;
-            flex-direction: column;
-            gap: 8px;
+        /* 系統設定說明區塊 */
+        .voice-guide-box {
+            background-color: #262626;
+            border: 1px solid #444;
+            border-left: 3px solid var(--accent-color);
+            padding: 12px;
+            border-radius: 8px;
             margin-bottom: 15px;
+            font-size: 11pt;
+            color: #ddd;
+            line-height: 1.6;
         }
 
-        .voice-select-row {
-            display: flex;
-            gap: 8px;
-            align-items: center;
-        }
-
-        .voice-select-row select {
-            flex: 1;
-            font-size: 12pt;
-            padding: 10px;
-            background-color: #2a2a2a;
-            color: #fff;
-            border: 1px solid #555;
-            border-radius: 8px;
-            min-width: 0;
-        }
-
-        .voice-test-btn {
-            font-size: 12pt;
-            padding: 10px 12px;
-            background-color: var(--accent-color);
-            color: #121212;
-            font-weight: bold;
-            border: none;
-            border-radius: 8px;
-            cursor: pointer;
-            white-space: nowrap;
-            flex-shrink: 0;
+        .voice-guide-box strong {
+            color: var(--accent-color);
         }
 
         .tag-selector-title {
@@ -580,14 +559,14 @@
                 <option value="SHUFFLE">🃏 洗牌模式 (不重複抽，讀完才洗牌)</option>
             </select>
 
-            <label style="display:block; margin: 10px 0; font-weight: bold; color: var(--accent-color);">朗讀聲音綁定 (列出手機內所有語音包)：</label>
-            <div class="voice-section-container">
-                <div class="voice-select-row">
-                    <select id="voiceSelect" onchange="changeVoice(this.value)">
-                        <option value="DEFAULT">🗣️ 系統預設語音</option>
-                    </select>
-                    <button class="voice-test-btn" onclick="testVoiceSample()">▶️ 試聽例句</button>
-                </div>
+            <label style="display:block; margin: 10px 0; font-weight: bold; color: var(--accent-color);">朗讀聲音設定：</label>
+            <select style="width:100%; margin-bottom: 8px; font-size:14pt; padding:8px;" disabled>
+                <option selected>🗣️ 系統預設語音</option>
+            </select>
+            
+            <div class="voice-guide-box">
+                💡 <strong>想更換男聲/女聲或下載新發音？</strong><br>
+                請至手機：<code>設定</code> ➔ <code>更多設定</code> ➔ <code>語言與輸入法</code> ➔ <code>文字轉語音輸出</code> ➔ <code>偏好的引擎</code> (點選右側帶圈圈的「&gt;」) ➔ <code>安裝語音資料</code> 進行切換或下載。
             </div>
 
             <label style="display:block; margin: 10px 0; font-weight: bold; color: var(--accent-color);">朗讀語速設定：</label>
@@ -737,11 +716,9 @@
         let shuffledQueue = [];
         let shuffleIndex = 0;
 
-        // 語音朗讀變數與 Web Audio API
+        // 語音朗讀變數
         let isSpeaking = false;
         let speechRate = 1.25;
-        let selectedVoiceURI = "DEFAULT";
-        let availableVoices = [];
         let synth = window.speechSynthesis;
 
         window.onload = function() {
@@ -765,15 +742,9 @@
                 document.getElementById('speechRateSelect').value = savedRate;
             }
 
-            const savedVoice = localStorage.getItem('my_speech_voice');
-            if (savedVoice) {
-                selectedVoiceURI = savedVoice;
-            }
-
             updateCategoryDropdown();
             renderCard();
             setupTouchEvents();
-            initVoices();
             setupMediaSessionHandlers();
             setupVisibilityWakeup();
         };
@@ -833,92 +804,6 @@
                     artist: currentQuote.source ? `來源：${currentQuote.source}` : '勵志語與知識卡片',
                     album: '個人語錄庫',
                 });
-            }
-        }
-
-        /* 抓取手機內安裝的所有語音包並精準列出 */
-        function initVoices() {
-            if (!synth) return;
-
-            function populateVoiceList() {
-                availableVoices = synth.getVoices();
-                const select = document.getElementById('voiceSelect');
-                if (!select) return;
-
-                let html = '<option value="DEFAULT">🗣️ 系統預設語音</option>';
-
-                // 篩選中文/廣東話語音，完全列出名稱與識別碼，解決選擇混亂問題
-                const zhVoices = availableVoices.filter(v => 
-                    v.lang.toLowerCase().includes('zh') || 
-                    v.lang.toLowerCase().includes('cmn') || 
-                    v.lang.toLowerCase().includes('yue') ||
-                    v.lang.toLowerCase().includes('cht')
-                );
-
-                zhVoices.forEach((v) => {
-                    let countryTag = "";
-                    const langLower = v.lang.toLowerCase();
-                    if (langLower.includes('tw') || langLower.includes('cht')) countryTag = "🇹🇼 台灣";
-                    else if (langLower.includes('hk') || langLower.includes('yue')) countryTag = "🇭🇰 香港";
-                    else if (langLower.includes('cn') || langLower.includes('cmn')) countryTag = "🇨🇳 大陸";
-                    else countryTag = `🌐 ${v.lang}`;
-
-                    let icon = "🗣️";
-                    const nameLower = v.name.toLowerCase();
-                    if (nameLower.includes('male') || nameLower.includes('danny') || nameLower.includes('yunxi') || nameLower.includes('yunjian') || nameLower.includes('ken') || nameLower.includes('kangkang')) {
-                        icon = "👨";
-                    } else if (nameLower.includes('female') || nameLower.includes('xiaoxiao') || nameLower.includes('meijia') || nameLower.includes('hanhan') || nameLower.includes('hiujaan')) {
-                        icon = "👩";
-                    }
-
-                    html += `<option value="${v.voiceURI}">${icon} ${countryTag} - ${v.name}</option>`;
-                });
-
-                select.innerHTML = html;
-
-                if (selectedVoiceURI && selectedVoiceURI !== 'DEFAULT') {
-                    select.value = selectedVoiceURI;
-                }
-            }
-
-            populateVoiceList();
-            if (speechSynthesis.onvoiceschanged !== undefined) {
-                speechSynthesis.onvoiceschanged = populateVoiceList;
-            }
-        }
-
-        /* 試聽選擇的聲音例句 */
-        function testVoiceSample() {
-            if (!synth) return;
-            
-            playSilentAnchor();
-            synth.cancel();
-
-            const sampleText = "您好，這是一段測試例句，祝您今天擁有美好的一天。";
-            
-            const utterance = new SpeechSynthesisUtterance(sampleText);
-            utterance.lang = 'zh-TW';
-            utterance.rate = speechRate;
-
-            const selectedURI = document.getElementById('voiceSelect').value;
-            if (selectedURI !== "DEFAULT" && availableVoices.length > 0) {
-                const targetVoice = availableVoices.find(v => v.voiceURI === selectedURI);
-                if (targetVoice) {
-                    utterance.voice = targetVoice;
-                    if (targetVoice.lang) utterance.lang = targetVoice.lang;
-                }
-            }
-
-            synth.speak(utterance);
-        }
-
-        function changeVoice(val) {
-            selectedVoiceURI = val;
-            localStorage.setItem('my_speech_voice', selectedVoiceURI);
-            showToast("🗣️ 已鎖定選取語音包");
-
-            if (isSpeaking) {
-                speakCurrentQuote(true);
             }
         }
 
@@ -1008,14 +893,6 @@
             const utterance = new SpeechSynthesisUtterance(readText);
             utterance.lang = 'zh-TW';
             utterance.rate = speechRate;
-
-            if (selectedVoiceURI !== "DEFAULT" && availableVoices.length > 0) {
-                const targetVoice = availableVoices.find(v => v.voiceURI === selectedVoiceURI);
-                if (targetVoice) {
-                    utterance.voice = targetVoice;
-                    if (targetVoice.lang) utterance.lang = targetVoice.lang;
-                }
-            }
 
             utterance.onend = function() {
                 if (isSpeaking) {
